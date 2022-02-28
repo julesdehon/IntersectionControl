@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://sumo.dlr.de/xsd/additional_file.xsd">
+    <route id="se" edges="iS oE iS"/>
+    <route id="sn" edges="iS oN iW"/>
+    <route id="sw" edges="iS oW iN"/>
+
+    <route id="ns" edges="iN oS iE"/>
+    <route id="ne" edges="iN oE iS"/>
+    <route id="nw" edges="iN oW iN"/>
+
+    <route id="ws" edges="iW oS iE"/>
+    <route id="wn" edges="iW oN iW"/>
+    <route id="we" edges="iW oE iS"/>
+
+    <route id="en" edges="iE oN iW"/>
+    <route id="ew" edges="iE oW iN"/>
+    <route id="es" edges="iE oS iE"/>
+
+    <rerouter id="rerouter_e" edges="iS">
+        <interval end="1e9" begin="0">
+            <routeProbReroute id="sw" probability="0.33"/>
+            <routeProbReroute id="se" probability="0.33"/>
+            <routeProbReroute id="sn" probability="0.33"/>
+        </interval>
+    </rerouter>
+    <rerouter id="rerouter_s" edges="iE">
+        <interval end="1e9" begin="0">
+            <routeProbReroute id="en" probability="0.33"/>
+            <routeProbReroute id="ew" probability="0.33"/>
+            <routeProbReroute id="es" probability="0.33"/>
+        </interval>
+    </rerouter>
+    <rerouter id="rerouter_w" edges="iN">
+        <interval end="1e9" begin="0">
+            <routeProbReroute id="ne" probability="0.33"/>
+            <routeProbReroute id="ns" probability="0.33"/>
+            <routeProbReroute id="nw" probability="0.33"/>
+        </interval>
+    </rerouter>
+    <rerouter id="rerouter_n" edges="iW">
+        <interval end="1e9" begin="0">
+            <routeProbReroute id="ws" probability="0.33"/>
+            <routeProbReroute id="we" probability="0.33"/>
+            <routeProbReroute id="wn" probability="0.33"/>
+        </interval>
+    </rerouter>
+</additional>
