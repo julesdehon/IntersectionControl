@@ -30,6 +30,10 @@ class CommunicativeAgent(ABC):
     def send(self, message: Message):
         pass
 
+    @abstractmethod
+    def get_id(self) -> str:
+        pass
+
 
 '''
 Intersection Manager
@@ -48,7 +52,21 @@ class IntersectionManager(CommunicativeAgent, ABC):
 
 
 class IMEnvironmentInterface(ABC):
-    pass
+    @abstractmethod
+    def get_current_time(self):
+        pass
+
+    @abstractmethod
+    def get_width(self):
+        pass
+
+    @abstractmethod
+    def get_height(self):
+        pass
+
+    @abstractmethod
+    def get_trajectories(self):
+        pass
 
 
 '''
@@ -62,7 +80,6 @@ intersection
 class Vehicle(CommunicativeAgent, ABC):
     def __init__(self, env_interface: VehicleEnvironmentInterface):
         self.env_interface = env_interface
-        self.state = VehicleState.DEFAULT
 
     @abstractmethod
     def step(self):
@@ -82,8 +99,26 @@ class VehicleEnvironmentInterface(ABC):
     def in_intersection(self) -> bool:
         pass
 
+    @abstractmethod
+    def get_id(self) -> str:
+        pass
 
-class VehicleState:
-    APPROACHING = 0
-    IN_INTERSECTION = 1
-    DEFAULT = 2
+    @abstractmethod
+    def get_trajectory(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_length(self) -> float:
+        pass
+
+    @abstractmethod
+    def get_width(self) -> float:
+        pass
+
+
+'''
+Performance Indication
+-------------
+Either communicate with each-other or the intersection manager in order to figure out how to proceed through the
+intersection
+'''

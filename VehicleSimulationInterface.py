@@ -14,6 +14,15 @@ class VehicleSimulationInterface(VehicleEnvironmentInterface):
         self.intersection_incoming_lanes = [edge.getID() for edge in self.net.getNode("intersection").getIncoming()]
         self.intersection_outgoing_lanes = [edge.getID() for edge in self.net.getNode("intersection").getOutgoing()]
 
+    def get_trajectory(self):
+        return traci.vehicle.getRouteID(self.get_id())
+
+    def get_length(self):
+        return traci.vehicle.getLength(self.get_id())
+
+    def get_width(self):
+        return traci.vehicle.getWidth(self.get_id())
+
     def approaching(self, communication_range) -> bool:
         im_x, im_y = self.im_env_interface.get_position()
         x, y = self.get_position()
@@ -29,3 +38,7 @@ class VehicleSimulationInterface(VehicleEnvironmentInterface):
 
     def get_position(self):
         return traci.vehicle.getPosition(self.id)
+
+    def get_id(self) -> str:
+        return self.id
+

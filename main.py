@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import os
 import sys
+
 # we need to import python modules from the $SUMO_HOME/tools directory
+from VehicleProducer import VehicleProducer
+
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
@@ -33,18 +36,7 @@ def get_options():
 
 def im_for_algo(algorithm: str, im_sim_interface: IMSimulationInterface) -> IntersectionManager:
     if algorithm == "qb-im":
-        return QBIMIntersectionManager(im_sim_interface)
-    elif algorithm == "ab-im":
-        raise NotImplementedError
-    elif algorithm == "decentralised":
-        raise NotImplementedError
-    else:
-        raise ValueError
-
-
-def vehicle_for_algo(algorithm: str, im: IntersectionManager, veh_sim_interface: VehicleSimulationInterface) -> Vehicle:
-    if algorithm == "qb-im":
-        return QBIMVehicle(im, veh_sim_interface, communication_range=75)
+        return QBIMIntersectionManager(im_sim_interface, 10, 0.05)
     elif algorithm == "ab-im":
         raise NotImplementedError
     elif algorithm == "decentralised":
@@ -59,23 +51,29 @@ def main():
     # this script has been called from the command line. It will start sumo as a
     # server, then connect and run
     sumo_binary = sumolib.checkBinary('sumo') if options.nogui else sumolib.checkBinary('sumo-gui')
-
     # this is the normal way of using traci. sumo is started as a
     # subprocess and then the python script connects and runs
-    traci.start([sumo_binary, "-c", "network/intersection.sumocfg", "--step-length", "0.25"])
+    traci.start([sumo_binary, "-c", "network/intersection2.sumocfg", "--step-length", "0.05",
+                 "--collision.check-junctions"])
     traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
 
     im_simulation_interface = IMSimulationInterface("intersection")
     intersection_manager = im_for_algo(options.algorithm, im_simulation_interface)
 
-    vehicle_simulation_interfaces = [VehicleSimulationInterface(vehicle_id, im_simulation_interface) for vehicle_id in
-                                     traci.vehicle.getIDList()]
-    vehicles = [vehicle_for_algo(options.algorithm, intersection_manager, vehicle_simulation_interface) for
-                vehicle_simulation_interface in vehicle_simulation_interfaces]
+    vehicles = []
+    rates = {
+        "N": (15, {"NE": 1/3, "NS": 1/3, "NW": 1/3}),
+        "E": (15, {"EN": 1/3, "ES": 1/3, "EW": 1/3}),
+        "S": (15, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
+        "W": (15, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
+    }
+    vehicle_producer = VehicleProducer(vehicles, rates, options.algorithm, intersection_manager,
+                                       im_simulation_interface)
 
     step = 0
     while step < options.step_count:
         traci.simulationStep()
+        vehicle_producer.step()
         for vehicle in vehicles:
             vehicle.step()
         intersection_manager.step()
