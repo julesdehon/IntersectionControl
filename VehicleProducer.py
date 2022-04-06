@@ -70,12 +70,12 @@ class ConflictingVehicleProducer:
             return
 
         next_id = self.get_next_id()
-        traci.vehicle.add(f"EW{next_id}", "EW", departSpeed="5")
+        traci.vehicle.add(f"EW{next_id}", "EW", departSpeed="9")
         traci.vehicle.setSpeedMode(f"EW{next_id}", 0b110111)
         veh_sim_interface = VehicleSimulationInterface(f"EW{next_id}", self.im_env_interface)
         self.vehicle_list.append(self.vehicle_for_algo(veh_sim_interface))
 
-        traci.vehicle.add(f"NW{next_id}", "NW", departSpeed="10")
+        traci.vehicle.add(f"NW{next_id}", "NW", departSpeed="9.5")
         traci.vehicle.setSpeedMode(f"NW{next_id}", 0b110111)
         veh_sim_interface = VehicleSimulationInterface(f"NW{next_id}", self.im_env_interface)
         self.vehicle_list.append(self.vehicle_for_algo(veh_sim_interface))

@@ -64,15 +64,15 @@ def main():
 
     vehicles = []
     rates = {
-        "N": (6, {"NE": 1/3, "NS": 1/3, "NW": 1/3}),
-        "E": (6, {"EN": 1/3, "ES": 1/3, "EW": 1/3}),
-        "S": (6, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
-        "W": (6, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
+        "N": (10, {"NE": 1/3, "NS": 1/3, "NW": 1/3}),
+        "E": (10, {"EN": 1/3, "ES": 1/3, "EW": 1/3}),
+        "S": (10, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
+        "W": (10, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
     }
-    # vehicle_producer = RandomVehicleProducer(vehicles, rates, options.algorithm, intersection_manager,
-    #                                          im_simulation_interface)
-    vehicle_producer = ConflictingVehicleProducer(vehicles, options.algorithm, intersection_manager,
-                                                  im_simulation_interface)
+    vehicle_producer = RandomVehicleProducer(vehicles, rates, options.algorithm, intersection_manager,
+                                             im_simulation_interface)
+    # vehicle_producer = ConflictingVehicleProducer(vehicles, options.algorithm, intersection_manager,
+    #                                               im_simulation_interface)
 
     step = 0
     while step < options.step_count:
