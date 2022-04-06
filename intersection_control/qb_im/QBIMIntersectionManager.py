@@ -1,9 +1,11 @@
 from typing import Dict
-
+import logging
 from intersection_control.interfaces import Message, IntersectionManager, IMEnvironmentInterface
 from intersection_control.qb_im.constants import IMMessageType, VehicleMessageType
 import numpy as np
 import math
+
+logger = logging.getLogger(__name__)
 
 
 class QBIMIntersectionManager(IntersectionManager):
@@ -31,11 +33,19 @@ class QBIMIntersectionManager(IntersectionManager):
         if message.contents["type"] == VehicleMessageType.REQUEST \
                 or message.contents["type"] == VehicleMessageType.CHANGE_REQUEST:
             self.handle_request_message(message)
+        elif message.contents["type"] == VehicleMessageType.DONE:
+            logger.debug(f"Received done message from {message.sender.get_id()}")
+        else:
+            logger.warning(f"Received unknown message type from {message.sender.get_id()}. Ignoring.")
 
     def handle_request_message(self, message: Message):
         curr_time = self.discretise_time(self.env_interface.get_current_time())
-        if message.sender.get_id() in self.timeouts and self.timeouts[message.sender.get_id()] < curr_time:
-            message.sender.send(Message(self, {"type": IMMessageType.REJECT, "stop_required": False}))
+        if message.sender.get_id() in self.timeouts and self.timeouts[message.sender.get_id()] > curr_time:
+            logger.debug(f"Rejecting request for {message.sender.get_id()}: timeout not yet served")
+            message.sender.send(Message(self, {
+                "type": IMMessageType.REJECT,
+                "timeout": self.timeouts[message.sender.get_id()]
+            }))
             return
         arrival_time = message.contents["arrival_time"]
         self.timeouts[message.sender.get_id()] = curr_time + min(0.5, (arrival_time - curr_time) / 2)
@@ -53,10 +63,14 @@ class QBIMIntersectionManager(IntersectionManager):
             occupied_tiles = self.intersection.get_tiles_for_vehicle(temp_vehicle, (2, 2))
             tile_times.add((time, occupied_tiles))
             for tile in occupied_tiles:
-                buf = 0.5  # TODO: Tune this - the time buffer around which reservation slots are checked
+                buf = 1  # TODO: Tune this - the time buffer around which reservation slots are checked
                 for i in np.arange(-buf, buf, self.time_discretisation):
                     if (tile, time + i) in self.tiles:
-                        message.sender.send(Message(self, {"type": IMMessageType.REJECT, "stop_required": False}))
+                        logger.debug(f"Rejecting request for {message.sender.get_id()}: reservation collision")
+                        message.sender.send(Message(self, {
+                            "type": IMMessageType.REJECT,
+                            "timeout": self.timeouts[message.sender.get_id()]
+                        }))
                         return
             time += self.time_discretisation
             temp_vehicle.update(self.time_discretisation)
@@ -71,7 +85,13 @@ class QBIMIntersectionManager(IntersectionManager):
             for tile in tiles:
                 self.tiles[(tile, time)] = message.sender.get_id()
         self.reservations[message.sender.get_id()] = tile_times
-        message.sender.send(Message(self, {"type": IMMessageType.CONFIRM}))
+        logger.debug(f"Accepting request for {message.sender.get_id()}")
+        message.sender.send(Message(self, {
+            "type": IMMessageType.CONFIRM,
+            "reservation_id": message.sender.get_id(),
+            "arrival_time": arrival_time,
+            "arrival_velocity": message.contents["arrival_velocity"]
+        }))
 
     def discretise_time(self, time, direction="nearest"):
         if direction == "ceiling":

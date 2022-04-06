@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import os
 import sys
+import logging
 
 # we need to import python modules from the $SUMO_HOME/tools directory
-from VehicleProducer import VehicleProducer
+from VehicleProducer import RandomVehicleProducer, ConflictingVehicleProducer
 
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -46,6 +47,7 @@ def im_for_algo(algorithm: str, im_sim_interface: IMSimulationInterface) -> Inte
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG)
     options = get_options()
 
     # this script has been called from the command line. It will start sumo as a
@@ -53,8 +55,8 @@ def main():
     sumo_binary = sumolib.checkBinary('sumo') if options.nogui else sumolib.checkBinary('sumo-gui')
     # this is the normal way of using traci. sumo is started as a
     # subprocess and then the python script connects and runs
-    traci.start([sumo_binary, "-c", "network/intersection2.sumocfg", "--step-length", "0.05",
-                 "--collision.check-junctions"])
+    traci.start([sumo_binary, "-c", "network/intersection.sumocfg", "--step-length", "0.05",
+                 "--collision.check-junctions", "--default.speeddev", "0"])
     traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
 
     im_simulation_interface = IMSimulationInterface("intersection")
@@ -62,13 +64,15 @@ def main():
 
     vehicles = []
     rates = {
-        "N": (15, {"NE": 1/3, "NS": 1/3, "NW": 1/3}),
-        "E": (15, {"EN": 1/3, "ES": 1/3, "EW": 1/3}),
-        "S": (15, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
-        "W": (15, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
+        "N": (6, {"NE": 1/3, "NS": 1/3, "NW": 1/3}),
+        "E": (6, {"EN": 1/3, "ES": 1/3, "EW": 1/3}),
+        "S": (6, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
+        "W": (6, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
     }
-    vehicle_producer = VehicleProducer(vehicles, rates, options.algorithm, intersection_manager,
-                                       im_simulation_interface)
+    # vehicle_producer = RandomVehicleProducer(vehicles, rates, options.algorithm, intersection_manager,
+    #                                          im_simulation_interface)
+    vehicle_producer = ConflictingVehicleProducer(vehicles, options.algorithm, intersection_manager,
+                                                  im_simulation_interface)
 
     step = 0
     while step < options.step_count:

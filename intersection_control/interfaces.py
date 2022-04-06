@@ -115,6 +115,26 @@ class VehicleEnvironmentInterface(ABC):
     def get_width(self) -> float:
         pass
 
+    @abstractmethod
+    def get_driving_distance(self) -> float:
+        pass
+
+    @abstractmethod
+    def get_velocity(self) -> float:
+        pass
+
+    @abstractmethod
+    def set_desired_speed(self, to: float):
+        pass
+
+    @abstractmethod
+    def get_current_time(self) -> float:
+        pass
+
+    @abstractmethod
+    def get_speed_through_trajectory(self) -> float:
+        pass
+
 
 '''
 Performance Indication

@@ -110,8 +110,8 @@ class IMMessageType:
     the intersection.
     This message has 1 field:
     
-    * stop_required — a boolean value indicating whether the vehicle must first come to
-                      a full stop before entering the intersection.
+    * timeout — the time at which the intersection manager will once again begin considering requests
+                from this vehicle
     """
 
     ACKNOWLEDGE = 2

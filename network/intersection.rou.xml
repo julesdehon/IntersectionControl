@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-02-23 19:52:22 by Eclipse SUMO netedit Version 1.12.0
+<!-- generated on 2022-03-28 16:22:03 by Eclipse SUMO netedit Version 1.12.0
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vType accel="3.0" decel="6.0" id="car" length="5.0" minGap="2.5" maxSpeed="50.0" sigma="0.5" guiShape="passenger"/>
-    
-    <vehicle id="veh0" depart="0" route="sn" type="car" />
-    <vehicle id="veh1" depart="0" route="ew" type="car" />
-    <vehicle id="veh2" depart="0" route="we" type="car" />
-    <vehicle id="veh3" depart="0" route="ns" type="car" />
+    <route id="SN" edges="iS oN"/>
+    <route id="SE" edges="iS oE"/>
+    <route id="NW" edges="iN oW"/>
+    <route id="NE" edges="iN oE"/>
+    <route id="SW" edges="iS oW"/>
+    <route id="WS" edges="iW oS"/>
+    <route id="WE" edges="iW oE"/>
+    <route id="WN" edges="iW oN"/>
+    <route id="EN" edges="iE oN"/>
+    <route id="EW" edges="iE oW"/>
+    <route id="ES" edges="iE oS"/>
+    <route id="NS" edges="iN oS"/>
 </routes>

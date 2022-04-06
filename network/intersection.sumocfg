@@ -8,7 +8,6 @@
     <input>
         <net-file value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/network/intersection.net.xml"/>
         <route-files value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/network/intersection.rou.xml"/>
-        <additional-files value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/network/intersection.add.xml"/>
     </input>
 
 </configuration>
