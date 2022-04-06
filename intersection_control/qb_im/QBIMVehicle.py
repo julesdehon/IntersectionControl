@@ -1,3 +1,4 @@
+from typing import Optional
 from intersection_control.interfaces import IntersectionManager, Message, Vehicle, VehicleEnvironmentInterface
 from intersection_control.qb_im.constants import VehicleMessageType, IMMessageType, VehicleState
 import logging
@@ -13,20 +14,25 @@ class QBIMVehicle(Vehicle):
         self.communication_range = communication_range
         self.message_queue = []
         self.state = VehicleState.DEFAULT
-        self.reservation: Reservation = None
+        self.reservation: Optional[Reservation] = None
         self.timeout = self.env_interface.get_current_time()
         self.target_speed = None
 
     def step(self):
+        # Handle all messages
         for message in self.message_queue:
             self.handle_message(message)
         self.message_queue = []
 
+        # If we are within the communication range of the IM, update the vehicle state to APPROACHING
         if self.state == VehicleState.DEFAULT and self.env_interface.approaching(self.communication_range):
             self.state = VehicleState.APPROACHING
+
+        # If we are approaching, and do not yet have a reservation, send a reservation request to the IM
         if self.state == VehicleState.APPROACHING and self.reservation is None \
                 and self.env_interface.get_current_time() >= self.timeout:
-            logger.debug(f"[{self.get_id()}] Sending reservation request")
+            logger.debug(f"[{self.get_id()}] Sending reservation request for time {self.approximate_arrival_time()}"
+                         f" and velocity {self.approximate_arrival_velocity()}")
             self.intersection_manager.send(Message(self, {
                 "type": VehicleMessageType.REQUEST,
                 "vehicle_id": self.get_id(),
@@ -36,11 +42,33 @@ class QBIMVehicle(Vehicle):
                 "vehicle_length": self.env_interface.get_length(),
                 "vehicle_width": self.env_interface.get_width()
             }))
+        elif self.state == VehicleState.APPROACHING and self.reservation is not None \
+            and not self.env_interface.in_intersection() \
+            and self.env_interface.get_current_time() >= self.timeout \
+            and (self.approximate_arrival_time() < self.reservation.early_error
+                 or self.approximate_arrival_time() > self.reservation.late_error):
+            logger.debug(f"[{self.get_id()}] Changing reservation request. Old reservation time: "
+                         f"{self.reservation.arrival_time}, new approximate arrival: {self.approximate_arrival_time()}")
+            self.intersection_manager.send(Message(self, {
+                "type": VehicleMessageType.CHANGE_REQUEST,
+                "vehicle_id": self.get_id(),
+                "arrival_time": self.approximate_arrival_time(),
+                "arrival_lane": self.env_interface.get_trajectory(),
+                "arrival_velocity": self.approximate_arrival_velocity(),
+                "vehicle_length": self.env_interface.get_length(),
+                "vehicle_width": self.env_interface.get_width(),
+                "reservation_id": self.reservation.reservation_id
+            }))
+            self.reservation = None
+
+        # On arriving at the intersection, produce a log message and update vehicle state to IN_INTERSECTION
         if self.state == VehicleState.APPROACHING and self.env_interface.in_intersection():
             logger.debug(f"[{self.get_id()}] Arrived at intersection. Reservation time: {self.reservation.arrival_time}"
                          f" Actual time: {self.env_interface.get_current_time()}. Reservation velocity: "
                          f"{self.reservation.arrival_velocity} Actual velocity: {self.env_interface.get_velocity()}.")
             self.state = VehicleState.IN_INTERSECTION
+
+        # On departing the intersection, send a DONE message to the IM and update vehicle state to DEFAULT
         if self.state == VehicleState.IN_INTERSECTION and self.env_interface.departing():
             logger.debug(f"[{self.get_id()}] Leaving the intersection")
             self.intersection_manager.send(Message(self, {
@@ -59,11 +87,7 @@ class QBIMVehicle(Vehicle):
 
     def handle_message(self, message: Message):
         if message.contents["type"] == IMMessageType.CONFIRM:
-            self.reservation = Reservation(
-                message.contents["reservation_id"],
-                message.contents["arrival_time"],
-                message.contents["arrival_velocity"]
-            )
+            self.reservation = Reservation(message)
         elif message.contents["type"] == IMMessageType.REJECT:
             self.timeout = message.contents["timeout"]
             self.target_speed = self.env_interface.get_velocity() * 0.8
@@ -83,7 +107,9 @@ class QBIMVehicle(Vehicle):
 
 
 class Reservation:
-    def __init__(self, reservation_id: str, arrival_time: float, arrival_velocity: float):
-        self.reservation_id = reservation_id
-        self.arrival_time = arrival_time
-        self.arrival_velocity = arrival_velocity
+    def __init__(self, confirm_message: Message):
+        self.reservation_id = confirm_message.contents["reservation_id"]
+        self.arrival_time = confirm_message.contents["arrival_time"]
+        self.arrival_velocity = confirm_message.contents["arrival_velocity"]
+        self.early_error = confirm_message.contents["early_error"]
+        self.late_error = confirm_message.contents["late_error"]

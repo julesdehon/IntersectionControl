@@ -7,6 +7,8 @@ import math
 
 logger = logging.getLogger(__name__)
 
+TIME_BUFFER = 1
+
 
 class QBIMIntersectionManager(IntersectionManager):
     def __init__(self, env_interface: IMEnvironmentInterface, granularity, time_discretisation):
@@ -39,6 +41,13 @@ class QBIMIntersectionManager(IntersectionManager):
             logger.warning(f"Received unknown message type from {message.sender.get_id()}. Ignoring.")
 
     def handle_request_message(self, message: Message):
+        if message.contents["type"] == VehicleMessageType.CHANGE_REQUEST:
+            old_tile_times = self.reservations[message.sender.get_id()]
+            for (time, tiles) in old_tile_times:
+                for tile in tiles:
+                    self.tiles.pop((tile, time))
+            self.reservations.pop(message.sender.get_id())
+
         curr_time = self.discretise_time(self.env_interface.get_current_time())
         if message.sender.get_id() in self.timeouts and self.timeouts[message.sender.get_id()] > curr_time:
             logger.debug(f"Rejecting request for {message.sender.get_id()}: timeout not yet served")
@@ -63,7 +72,7 @@ class QBIMIntersectionManager(IntersectionManager):
             occupied_tiles = self.intersection.get_tiles_for_vehicle(temp_vehicle, (2, 2))
             tile_times.add((time, occupied_tiles))
             for tile in occupied_tiles:
-                buf = 1  # TODO: Tune this - the time buffer around which reservation slots are checked
+                buf = TIME_BUFFER  # TODO: Tune this - the time buffer around which reservation slots are checked
                 for i in np.arange(-buf, buf, self.time_discretisation):
                     if (tile, time + i) in self.tiles:
                         logger.debug(f"Rejecting request for {message.sender.get_id()}: reservation collision")
@@ -75,12 +84,6 @@ class QBIMIntersectionManager(IntersectionManager):
             time += self.time_discretisation
             temp_vehicle.update(self.time_discretisation)
 
-        if message.contents["type"] == VehicleMessageType.CHANGE_REQUEST:
-            old_tile_times = self.reservations[message.sender.get_id()]
-            for (time, tiles) in old_tile_times:
-                for tile in tiles:
-                    self.tiles[(tile, time)] = None
-
         for (time, tiles) in tile_times:
             for tile in tiles:
                 self.tiles[(tile, time)] = message.sender.get_id()
@@ -90,7 +93,9 @@ class QBIMIntersectionManager(IntersectionManager):
             "type": IMMessageType.CONFIRM,
             "reservation_id": message.sender.get_id(),
             "arrival_time": arrival_time,
-            "arrival_velocity": message.contents["arrival_velocity"]
+            "arrival_velocity": message.contents["arrival_velocity"],
+            "early_error": arrival_time - TIME_BUFFER / 2,
+            "late_error": arrival_time + TIME_BUFFER / 2
         }))
 
     def discretise_time(self, time, direction="nearest"):
