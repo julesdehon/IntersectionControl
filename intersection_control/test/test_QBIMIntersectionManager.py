@@ -25,7 +25,7 @@ class TestIntersection(unittest.TestCase):
             "WE": [np.array((-30., -10.)), np.array((30., -10.))],
             "WN": [np.array((-30., -10.)), np.array((-8., -4.)), np.array((6., 12.)), np.array((10., 30.))]
         }
-        self.intersection = Intersection(60, 60, 40, trajectories)
+        self.intersection = Intersection(60, 60, 10, trajectories)
         self.vehicle = InternalVehicle(10,  # velocity
                                        5,  # length
                                        2,  # width
