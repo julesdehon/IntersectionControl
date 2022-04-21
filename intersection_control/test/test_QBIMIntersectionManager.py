@@ -5,7 +5,8 @@ import math
 
 from matplotlib.animation import FuncAnimation
 
-from intersection_control.interfaces import CommunicativeAgent, IMEnvironmentInterface, Message
+from intersection_control.core import IMEnvironmentInterface
+from intersection_control.core import Message, CommunicativeAgent
 from intersection_control.qb_im.QBIMIntersectionManager import Intersection, InternalVehicle, QBIMIntersectionManager
 
 import matplotlib.pyplot as plt

@@ -2,7 +2,7 @@ import traci
 import sumolib
 import math
 from IMSimulationInterface import IMSimulationInterface
-from intersection_control.interfaces import VehicleEnvironmentInterface
+from intersection_control.core import VehicleEnvironmentInterface
 
 
 class VehicleSimulationInterface(VehicleEnvironmentInterface):

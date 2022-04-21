@@ -3,7 +3,8 @@ import random
 
 from IMSimulationInterface import IMSimulationInterface
 from VehicleSimulationInterface import VehicleSimulationInterface
-from intersection_control.interfaces import Vehicle, IntersectionManager
+from intersection_control.core import Vehicle
+from intersection_control.core import IntersectionManager
 from intersection_control.qb_im.QBIMVehicle import QBIMVehicle
 
 

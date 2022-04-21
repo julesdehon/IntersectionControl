@@ -1,6 +1,6 @@
 import numpy as np
 
-from intersection_control.interfaces import IMEnvironmentInterface
+from intersection_control.core import IMEnvironmentInterface
 import traci
 import sumolib
 

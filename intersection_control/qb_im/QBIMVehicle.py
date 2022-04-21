@@ -1,5 +1,7 @@
 from typing import Optional
-from intersection_control.interfaces import IntersectionManager, Message, Vehicle, VehicleEnvironmentInterface
+from intersection_control.core import Vehicle, VehicleEnvironmentInterface
+from intersection_control.core import IntersectionManager
+from intersection_control.core import Message
 from intersection_control.qb_im.constants import VehicleMessageType, IMMessageType, VehicleState
 import logging
 

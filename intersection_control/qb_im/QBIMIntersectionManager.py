@@ -1,6 +1,7 @@
 from typing import Dict
 import logging
-from intersection_control.interfaces import Message, IntersectionManager, IMEnvironmentInterface
+from intersection_control.core import IntersectionManager, IMEnvironmentInterface
+from intersection_control.core import Message
 from intersection_control.qb_im.constants import IMMessageType, VehicleMessageType
 import numpy as np
 import math

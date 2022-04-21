@@ -16,7 +16,8 @@ import traci
 from optparse import OptionParser
 from IMSimulationInterface import IMSimulationInterface
 from VehicleSimulationInterface import VehicleSimulationInterface
-from intersection_control.interfaces import IntersectionManager, Vehicle
+from intersection_control.core import Vehicle
+from intersection_control.core import IntersectionManager
 from intersection_control.qb_im.QBIMIntersectionManager import QBIMIntersectionManager
 from intersection_control.qb_im.QBIMVehicle import QBIMVehicle
 
