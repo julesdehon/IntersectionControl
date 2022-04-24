@@ -1,7 +1,9 @@
+from __future__ import annotations
 from typing import Dict
 import logging
-from intersection_control.core import IntersectionManager, IMEnvironmentInterface
-from intersection_control.core import Message
+from intersection_control.core import IntersectionManager
+from intersection_control.core import Message, Environment
+from intersection_control.core.environment import Trajectory
 from intersection_control.qb_im.constants import IMMessageType, VehicleMessageType
 import numpy as np
 import math
@@ -12,17 +14,17 @@ TIME_BUFFER = 1
 
 
 class QBIMIntersectionManager(IntersectionManager):
-    def __init__(self, env_interface: IMEnvironmentInterface, granularity, time_discretisation):
-        super().__init__(env_interface)
+    def __init__(self, intersection_id: str, environment: Environment, granularity: int, time_discretisation: float):
+        super().__init__(intersection_id, environment)
         self.message_queue = []
         self.time_discretisation = time_discretisation
         self.tiles: Dict[((int, int), float), str] = {}  # A map from tiles and times to vehicle ids
         self.reservations = {}  # A map from vehicles to sets of tiles
         self.timeouts = {}  # A map from vehicles to times
-        self.intersection = Intersection(self.env_interface.get_width(),
-                                         self.env_interface.get_height(),
+        self.intersection = Intersection(self.get_width(),
+                                         self.get_height(),
                                          granularity,
-                                         self.env_interface.get_trajectories())
+                                         self.get_trajectories())
 
     def step(self):
         for message in self.message_queue:
@@ -49,7 +51,7 @@ class QBIMIntersectionManager(IntersectionManager):
                     self.tiles.pop((tile, time))
             self.reservations.pop(message.sender.get_id())
 
-        curr_time = self.discretise_time(self.env_interface.get_current_time())
+        curr_time = self.discretise_time(self.environment.get_current_time())
         if message.sender.get_id() in self.timeouts and self.timeouts[message.sender.get_id()] > curr_time:
             logger.debug(f"Rejecting request for {message.sender.get_id()}: timeout not yet served")
             message.sender.send(Message(self, {
@@ -113,13 +115,13 @@ class QBIMIntersectionManager(IntersectionManager):
 
 
 class InternalVehicle:
-    def __init__(self, velocity, length, width, trajectory, intersection):
+    def __init__(self, velocity, length, width, trajectory, intersection: Intersection):
         self.velocity = velocity
         self.acceleration = 0
         self.length = length
         self.width = width
         self.intersection = intersection
-        self.trajectory = np.copy(intersection.trajectories[trajectory])
+        self.trajectory = np.copy(intersection.trajectories[trajectory].points)
         self.curr_trajectory_slice = 0
         self.position = np.copy(self.trajectory[self.curr_trajectory_slice])
 
@@ -167,7 +169,7 @@ class Intersection:
     """
 
     def __init__(self, width: float, height: float, granularity: int,
-                 trajectories: Dict[str, list]):
+                 trajectories: Dict[str, Trajectory]):
         self.grid = np.full((granularity, granularity), False)
         self.granularity = granularity
         self.width = width

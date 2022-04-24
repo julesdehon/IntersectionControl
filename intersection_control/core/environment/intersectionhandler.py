@@ -24,7 +24,7 @@ class IntersectionHandler(ABC):
 
     @abstractmethod
     def get_width(self, intersection_id: str) -> float:
-        """Return the width of the given intersection
+        """Return the width of the given intersection in metres
 
         :param str intersection_id: The id of the intersection you want the
             width of
@@ -34,7 +34,7 @@ class IntersectionHandler(ABC):
 
     @abstractmethod
     def get_height(self, intersection_id: str) -> float:
-        """Return the height of the given intersection
+        """Return the height of the given intersection in metres
 
         :param str intersection_id: The id of the intersection you want the
             height of
