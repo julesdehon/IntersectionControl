@@ -10,7 +10,8 @@ import traci
 
 from intersection_control.core import Environment
 from intersection_control.core.environment import VehicleHandler, IntersectionHandler
-from intersection_control.environments.sumo import SumoIntersectionHandler, SumoVehicleHandler
+from .sumo_intersection_handler import SumoIntersectionHandler
+from .sumo_vehicle_handler import SumoVehicleHandler
 
 
 class SumoEnvironment(Environment):

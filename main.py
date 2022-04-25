@@ -1,23 +1,13 @@
 #!/usr/bin/env python
-import os
-import sys
 import logging
 
 # we need to import python modules from the $SUMO_HOME/tools directory
-from VehicleProducer import RandomVehicleProducer, ConflictingVehicleProducer
+from VehicleProducer import RandomVehicleProducer
 
-if 'SUMO_HOME' in os.environ:
-    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-    sys.path.append(tools)
-else:
-    sys.exit("please declare environment variable 'SUMO_HOME'")
-import sumolib
-import traci
 from optparse import OptionParser
-from IMSimulationInterface import IMSimulationInterface
-from VehicleSimulationInterface import VehicleSimulationInterface
-from intersection_control.core import Vehicle
+from intersection_control.core import Vehicle, Environment
 from intersection_control.core import IntersectionManager
+from intersection_control.environments.sumo import SumoEnvironment
 from intersection_control.qb_im.QBIMIntersectionManager import QBIMIntersectionManager
 from intersection_control.qb_im.QBIMVehicle import QBIMVehicle
 
@@ -36,55 +26,43 @@ def get_options():
     return options
 
 
-def im_for_algo(algorithm: str, im_sim_interface: IMSimulationInterface) -> IntersectionManager:
-    if algorithm == "qb-im":
-        return QBIMIntersectionManager(im_sim_interface, 10, 0.05)
-    elif algorithm == "ab-im":
-        raise NotImplementedError
-    elif algorithm == "decentralised":
-        raise NotImplementedError
-    else:
-        raise ValueError
+# def im_for_algo(algorithm: str, environment: Environment) -> IntersectionManager:
+#     if algorithm == "qb-im":
+#         return QBIMIntersectionManager(im_sim_interface, 10, 0.05)
+#     elif algorithm == "ab-im":
+#         raise NotImplementedError
+#     elif algorithm == "decentralised":
+#         raise NotImplementedError
+#     else:
+#         raise ValueError
 
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
     options = get_options()
 
-    # this script has been called from the command line. It will start sumo as a
-    # server, then connect and run
-    sumo_binary = sumolib.checkBinary('sumo') if options.nogui else sumolib.checkBinary('sumo-gui')
-    # this is the normal way of using traci. sumo is started as a
-    # subprocess and then the python script connects and runs
-    traci.start([sumo_binary, "-c", "network/intersection.sumocfg", "--step-length", "0.05",
-                 "--collision.check-junctions", "--default.speeddev", "0"])
-    traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
+    env = SumoEnvironment()
 
-    im_simulation_interface = IMSimulationInterface("intersection")
-    intersection_manager = im_for_algo(options.algorithm, im_simulation_interface)
+    intersection_managers = [QBIMIntersectionManager(intersection_id, env, 10, 0.05) for intersection_id in env.intersections.get_ids()]
+    vehicles = [QBIMVehicle(vehicle_id, intersection_managers[0], env, communication_range=75) for vehicle_id in env.vehicles.get_ids()]
 
-    vehicles = []
     rates = {
         "N": (5, {"NE": 1/3, "NS": 1/3, "NW": 1/3}),
         "E": (5, {"EN": 1/3, "ES": 1/3, "EW": 1/3}),
         "S": (5, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
         "W": (5, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
     }
-    vehicle_producer = RandomVehicleProducer(vehicles, rates, options.algorithm, intersection_manager,
-                                             im_simulation_interface)
+    vehicle_producer = RandomVehicleProducer(vehicles, rates, options.algorithm, intersection_managers[0], env)
     # vehicle_producer = ConflictingVehicleProducer(vehicles, options.algorithm, intersection_manager,
     #                                               im_simulation_interface)
 
-    step = 0
-    while step < options.step_count:
-        traci.simulationStep()
+    for _ in range(options.step_count):
+        env.step()
         vehicle_producer.step()
         for vehicle in vehicles:
             vehicle.step()
-        intersection_manager.step()
-        step += 1
-
-    traci.close(False)
+        for intersection_manager in intersection_managers:
+            intersection_manager.step()
 
 
 # this is the main entry point of this script

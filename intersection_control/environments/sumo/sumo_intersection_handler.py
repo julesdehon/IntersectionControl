@@ -9,12 +9,18 @@ class SumoIntersectionHandler(IntersectionHandler):
     def __init__(self):
         self.net = sumolib.net.readNet("network/intersection.net.xml", withInternal=True)
         self.routes = list(sumolib.xml.parse_fast("network/intersection.rou.xml", 'route', ['id', 'edges']))
+        # TODO: The notion of a trajectory here is capturing two things: routes through the intersection (does the car
+        #  want to go left, straight or right?), and also the actual path the vehicle might follow through the
+        #  the intersection - but these are actually two distinct things that need to be captured separately:
+        #  what are the directions I can go - and if I say I am going one of those directions, how many ways (what are
+        #  the trajectories I can follow) to do this? The reason this works here is because this is a single lane
+        #  intersection. This would not extend to a multi-lane intersection so this needs to change!
         self.trajectories: Dict[str, Dict[str, Trajectory]] = {
             intersection.getID():
                 {
                     self._get_route_through_edge(edge):
-                        Trajectory(edge.getMaxSpeed(), [np.array(point) for point in edge.getShape()])
-                    for edge in intersection.getInternal()
+                        Trajectory(edge.getSpeed(), [np.array(point) for point in edge.getShape()])
+                    for edge in [self.net.getLane(laneId) for laneId in intersection.getInternal()]
                 }
             for intersection in self.net.getNodes() if intersection.getType() == "traffic_light"
         }
@@ -42,6 +48,6 @@ class SumoIntersectionHandler(IntersectionHandler):
         for route in self.routes:
             edges = route.edges.split()
             inner_connection = self.net.getEdge(edges[0]).getConnections(self.net.getEdge(edges[1]))[0]
-            if self.net.getLane(inner_connection.getViaLaneID()).getEdge().getID() == edge.getID():
+            if self.net.getLane(inner_connection.getViaLaneID()).getID() == edge.getID():
                 return route.id
         return None

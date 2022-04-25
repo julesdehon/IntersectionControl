@@ -52,7 +52,7 @@ class SumoVehicleHandler(VehicleHandler):
         intersections = [node for node in self.net.getNodes() if node.getType() == "traffic_light"]
         result = {}
         for intersection in intersections:
-            for edge in intersection.getIncoming():
+            for edge in [edge for edge in intersection.getIncoming() if edge.getFunction() != "internal"]:
                 result[edge.getID()] = intersection.getID()
         return result
 
@@ -60,7 +60,7 @@ class SumoVehicleHandler(VehicleHandler):
         intersections = [node for node in self.net.getNodes() if node.getType() == "traffic_light"]
         result = {}
         for intersection in intersections:
-            for edge in intersection.getOutgoing():
+            for edge in [edge for edge in intersection.getOutgoing() if edge.getFunction() != "internal"]:
                 result[edge.getID()] = intersection.getID()
         return result
 
@@ -69,5 +69,5 @@ class SumoVehicleHandler(VehicleHandler):
         result = {}
         for intersection in intersections:
             for lane in intersection.getInternal():
-                result[lane.getID()] = intersection.getID()
+                result[lane] = intersection.getID()
         return result

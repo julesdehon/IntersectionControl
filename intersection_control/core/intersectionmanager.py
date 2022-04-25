@@ -47,21 +47,3 @@ class IntersectionManager(CommunicativeAgent, ABC):
         :return: A dictionary mapping trajectory ids to trajectories
         """
         return self.environment.intersections.get_trajectories(self.intersection_id)
-
-
-class IMEnvironmentInterface(ABC):
-    @abstractmethod
-    def get_current_time(self):
-        pass
-
-    @abstractmethod
-    def get_width(self):
-        pass
-
-    @abstractmethod
-    def get_height(self):
-        pass
-
-    @abstractmethod
-    def get_trajectories(self):
-        pass
