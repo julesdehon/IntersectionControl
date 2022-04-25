@@ -5,8 +5,8 @@ from intersection_control.core.environment import VehicleHandler
 
 
 class SumoVehicleHandler(VehicleHandler):
-    def __init__(self):
-        self.net = sumolib.net.readNet("network/intersection.net.xml", withInternal=True)
+    def __init__(self, net_file: str):
+        self.net = sumolib.net.readNet(net_file, withInternal=True)
 
         # Dictionary mapping roads to the intersections that they enter
         self.intersection_entered_by_lane = self._get_intersections_entered_by_lanes()

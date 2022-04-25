@@ -6,6 +6,8 @@ from VehicleProducer import RandomVehicleProducer
 from intersection_control.environments.sumo import SumoEnvironment
 from intersection_control.algorithms.qb_im import QBIMIntersectionManager
 from intersection_control.algorithms.qb_im import QBIMVehicle
+from intersection_control.environments.sumo.networks.single_intersection.demand_generators import RandomDemandGenerator, \
+    ConflictingDemandGenerator
 
 DEFAULT_STEP_COUNT = 360000  # 1 Hour
 
@@ -37,26 +39,22 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     options = get_options()
 
-    env = SumoEnvironment()
+    demand_generator = RandomDemandGenerator({
+        "NE": 2, "NS": 2, "NW": 2, "EN": 2, "ES": 2, "EW": 2, "SN": 2, "SE": 2, "SW": 2, "WN": 2, "WE": 2, "WS": 2
+    }, 0.05)
+    env = SumoEnvironment("intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
+                          demand_generator=demand_generator, time_step=0.05)
 
     intersection_managers = [QBIMIntersectionManager(intersection_id, env, 10, 0.05) for intersection_id in
                              env.intersections.get_ids()]
     vehicles = [QBIMVehicle(vehicle_id, intersection_managers[0], env, communication_range=75) for vehicle_id in
                 env.vehicles.get_ids()]
 
-    rates = {
-        "N": (5, {"NE": 1 / 3, "NS": 1 / 3, "NW": 1 / 3}),
-        "E": (5, {"EN": 1 / 3, "ES": 1 / 3, "EW": 1 / 3}),
-        "S": (5, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
-        "W": (5, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
-    }
-    vehicle_producer = RandomVehicleProducer(vehicles, rates, options.algorithm, intersection_managers[0], env)
-    # vehicle_producer = ConflictingVehicleProducer(vehicles, options.algorithm, intersection_manager,
-    #                                               im_simulation_interface)
-
     for _ in range(options.step_count):
         env.step()
-        vehicle_producer.step()
+        vehicles[:] = [v for v in vehicles if v.get_id() not in env.get_removed_vehicles()] + [
+            QBIMVehicle(vehicle_id, intersection_managers[0], env, communication_range=75) for vehicle_id in
+            env.get_added_vehicles()]
         for vehicle in vehicles:
             vehicle.step()
         for intersection_manager in intersection_managers:

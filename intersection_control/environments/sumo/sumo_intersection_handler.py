@@ -6,9 +6,9 @@ from intersection_control.core.environment import IntersectionHandler, Trajector
 
 
 class SumoIntersectionHandler(IntersectionHandler):
-    def __init__(self):
-        self.net = sumolib.net.readNet("network/intersection.net.xml", withInternal=True)
-        self.routes = list(sumolib.xml.parse_fast("network/intersection.rou.xml", 'route', ['id', 'edges']))
+    def __init__(self, net_file: str, route_file: str):
+        self.net = sumolib.net.readNet(net_file, withInternal=True)
+        self.routes = list(sumolib.xml.parse_fast(route_file, 'route', ['id', 'edges']))
         # TODO: The notion of a trajectory here is capturing two things: routes through the intersection (does the car
         #  want to go left, straight or right?), and also the actual path the vehicle might follow through the
         #  the intersection - but these are actually two distinct things that need to be captured separately:
