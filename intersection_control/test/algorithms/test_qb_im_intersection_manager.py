@@ -1,30 +1,32 @@
 import unittest
+from typing import Dict, Tuple, List
 from unittest.mock import MagicMock, patch
 from callee import Captor
 import math
 
 from matplotlib.animation import FuncAnimation
-
-from intersection_control.core import IMEnvironmentInterface
-from intersection_control.core import Message, CommunicativeAgent
-from intersection_control.qb_im.QBIMIntersectionManager import Intersection, InternalVehicle, QBIMIntersectionManager
-
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.transforms as transforms
 import numpy as np
 
-from intersection_control.qb_im.constants import VehicleMessageType, IMMessageType
+from intersection_control.core import Environment
+from intersection_control.core.environment import VehicleHandler, IntersectionHandler
+from intersection_control.core.intersection_manager import Trajectory
+from intersection_control.core.communication import Message, CommunicativeAgent
+from intersection_control.algorithms.qb_im.qb_im_intersection_manager import Intersection, InternalVehicle, \
+    QBIMIntersectionManager
+from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType
 
 
 class TestIntersection(unittest.TestCase):
     def setUp(self) -> None:
         trajectories = {
-            "SN": [np.array((10., -30.)), np.array((10., 30.))],
-            "NS": [np.array((-10., 30.)), np.array((-10., -30.))],
-            "EW": [np.array((30., 10.)), np.array((-30., 10.))],
-            "WE": [np.array((-30., -10.)), np.array((30., -10.))],
-            "WN": [np.array((-30., -10.)), np.array((-8., -4.)), np.array((6., 12.)), np.array((10., 30.))]
+            "SN": Trajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
+            "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
+            "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
+            "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))]),
+            "WN": Trajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)), np.array((6., 12.)), np.array((10., 30.))])
         }
         self.intersection = Intersection(60, 60, 10, trajectories)
         self.vehicle = InternalVehicle(10,  # velocity
@@ -38,32 +40,54 @@ class TestIntersection(unittest.TestCase):
 
 
 class TestIntersectionManager(unittest.TestCase):
-    class TestEnvInterface(IMEnvironmentInterface):
+    class TestEnv(Environment):
+        class TestIntersectionHandler(IntersectionHandler):
+            def get_ids(self) -> List[str]:
+                return ["intersection"]
+
+            def get_width(self, intersection_id: str) -> float:
+                return 60
+
+            def get_height(self, intersection_id: str) -> float:
+                return 60
+
+            def get_position(self, intersection_id: str) -> Tuple[float, float]:
+                return 0, 0
+
+            def get_trajectories(self, intersection_id: str) -> Dict[str, Trajectory]:
+                return {
+                    "SN": Trajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
+                    "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
+                    "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
+                    "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))])
+                }
+
+        @patch.multiple(VehicleHandler, __abstractmethods__=set())
         def __init__(self):
             self.t = 0
+            self._intersections = self.TestIntersectionHandler()
+            self._vehicles = VehicleHandler()
 
-        def get_current_time(self):
+        @property
+        def intersections(self) -> IntersectionHandler:
+            return self._intersections
+
+        @property
+        def vehicles(self) -> VehicleHandler:
+            return VehicleHandler()
+
+        def get_current_time(self) -> float:
             t = self.t
             self.t += 1
             return t
 
-        def get_width(self):
-            return 60
-
-        def get_height(self):
-            return 60
-
-        def get_trajectories(self):
-            return {
-                "SN": [np.array((10., -30.)), np.array((10., 30.))],
-                "NS": [np.array((-10., 30.)), np.array((-10., -30.))],
-                "EW": [np.array((30., 10.)), np.array((-30., 10.))],
-                "WE": [np.array((-30., -10.)), np.array((30., -10.))]
-            }
+        def step(self):
+            pass
 
     @patch.multiple(CommunicativeAgent, __abstractmethods__=set())
     def setUp(self) -> None:
-        self.im = QBIMIntersectionManager(self.TestEnvInterface(), 40, 0.05)
+        self.env = self.TestEnv()
+        self.im = QBIMIntersectionManager("intersection", self.env, 40, 0.05)
         self.vehicle = CommunicativeAgent()
         self.vehicle.get_id = lambda: "Bob"
         self.vehicle.send = MagicMock()

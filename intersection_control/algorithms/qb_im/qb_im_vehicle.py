@@ -2,7 +2,7 @@ from typing import Optional
 from intersection_control.core import Vehicle, Environment
 from intersection_control.core import IntersectionManager
 from intersection_control.core import Message
-from intersection_control.qb_im.constants import VehicleMessageType, IMMessageType, VehicleState
+from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType, VehicleState
 import logging
 
 logger = logging.getLogger(__name__)

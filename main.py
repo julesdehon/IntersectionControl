@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 import logging
-
-# we need to import python modules from the $SUMO_HOME/tools directory
-from VehicleProducer import RandomVehicleProducer
-
 from optparse import OptionParser
-from intersection_control.core import Vehicle, Environment
-from intersection_control.core import IntersectionManager
+
+from VehicleProducer import RandomVehicleProducer
 from intersection_control.environments.sumo import SumoEnvironment
-from intersection_control.qb_im.QBIMIntersectionManager import QBIMIntersectionManager
-from intersection_control.qb_im.QBIMVehicle import QBIMVehicle
+from intersection_control.algorithms.qb_im import QBIMIntersectionManager
+from intersection_control.algorithms.qb_im import QBIMVehicle
 
 DEFAULT_STEP_COUNT = 360000  # 1 Hour
 
@@ -43,12 +39,14 @@ def main():
 
     env = SumoEnvironment()
 
-    intersection_managers = [QBIMIntersectionManager(intersection_id, env, 10, 0.05) for intersection_id in env.intersections.get_ids()]
-    vehicles = [QBIMVehicle(vehicle_id, intersection_managers[0], env, communication_range=75) for vehicle_id in env.vehicles.get_ids()]
+    intersection_managers = [QBIMIntersectionManager(intersection_id, env, 10, 0.05) for intersection_id in
+                             env.intersections.get_ids()]
+    vehicles = [QBIMVehicle(vehicle_id, intersection_managers[0], env, communication_range=75) for vehicle_id in
+                env.vehicles.get_ids()]
 
     rates = {
-        "N": (5, {"NE": 1/3, "NS": 1/3, "NW": 1/3}),
-        "E": (5, {"EN": 1/3, "ES": 1/3, "EW": 1/3}),
+        "N": (5, {"NE": 1 / 3, "NS": 1 / 3, "NW": 1 / 3}),
+        "E": (5, {"EN": 1 / 3, "ES": 1 / 3, "EW": 1 / 3}),
         "S": (5, {"SN": 1 / 3, "SE": 1 / 3, "SW": 1 / 3}),
         "W": (5, {"WN": 1 / 3, "WE": 1 / 3, "WS": 1 / 3})
     }

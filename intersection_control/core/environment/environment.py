@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from .intersectionhandler import IntersectionHandler
-from .vehiclehandler import VehicleHandler
+from .intersection_handler import IntersectionHandler
+from .vehicle_handler import VehicleHandler
 
 
 class Environment(ABC):

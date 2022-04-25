@@ -4,7 +4,7 @@ import logging
 from intersection_control.core import IntersectionManager
 from intersection_control.core import Message, Environment
 from intersection_control.core.environment import Trajectory
-from intersection_control.qb_im.constants import IMMessageType, VehicleMessageType
+from intersection_control.algorithms.qb_im.constants import IMMessageType, VehicleMessageType
 import numpy as np
 import math
 

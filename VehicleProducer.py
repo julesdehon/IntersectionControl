@@ -1,11 +1,9 @@
 import traci
 import random
-from typing import Dict, List
-# from IMSimulationInterface import IMSimulationInterface
-# from VehicleSimulationInterface import VehicleSimulationInterface
+from typing import List
 from intersection_control.core import Vehicle, Environment
 from intersection_control.core import IntersectionManager
-from intersection_control.qb_im.QBIMVehicle import QBIMVehicle
+from intersection_control.algorithms.qb_im import QBIMVehicle
 
 
 class RandomVehicleProducer:
