@@ -29,7 +29,6 @@ class QBIMVehicle(Vehicle):
             self.handle_message(message)
 
         # If we are within the communication range of the IM, update the vehicle state to APPROACHING
-        # TODO: Reimplement communication range when communicating with the intersection manager
         if self.state == VehicleState.DEFAULT:
             self.approaching_im = self.approaching()
             if self.approaching_im is not None and self.approaching_im in self.messaging_unit.discover():

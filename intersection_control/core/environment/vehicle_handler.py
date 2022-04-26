@@ -7,42 +7,84 @@ class VehicleHandler(ABC):
     @abstractmethod
     def approaching(self, vehicle_id: str) -> Optional[str]:
         """Returns the id of the intersection the given vehicle is approaching, or None
-        if it is not approaching an intersection"""
+        if it is not approaching an intersection
+
+        :param: str vehicle_id: The ID of the vehicle we are interested in
+        :return: Either the ID of the intersection being approached, or None
+        """
         raise NotImplementedError
 
     @abstractmethod
     def departing(self, vehicle_id: str) -> Optional[str]:
         """Returns the id of the intersection the given vehicle is departing, or None
-        if it is not departing an intersection"""
+        if it is not departing an intersection
+
+        :param: str vehicle_id: The ID of the vehicle we are interested in
+        :return: Either the ID of the intersection being departed, or None
+        """
         raise NotImplementedError
 
     @abstractmethod
     def in_intersection(self, vehicle_id: str) -> bool:
+        """Returns True iff the given vehicle is currently inside an intersection
+
+        :param str vehicle_id: The ID of the vehicle we are interested in
+        :return: True iff the given vehicle is currently inside an intersection
+        """
         raise NotImplementedError
 
     @abstractmethod
     def get_ids(self) -> List[str]:
+        """Returns a list of all vehicle IDs currently in the environment
+
+        :return: List of vehicle IDs
+        """
         raise NotImplementedError
 
     @abstractmethod
     def get_trajectory(self, vehicle_id: str) -> str:
+        """Returns the ID of the trajectory the vehicle is planning to take through the
+        next intersection
+
+        :param str vehicle_id: The ID of the vehicle we are interested in
+        :return: Trajectory ID
+        """
         raise NotImplementedError
 
     @abstractmethod
     def get_length(self, vehicle_id: str) -> float:
+        """Returns the length of the given vehicle
+
+        :param str vehicle_id: The ID of the vehicle we are interested in
+        :return: Length of the vehicle in metres
+        """
         raise NotImplementedError
 
     @abstractmethod
     def get_width(self, vehicle_id: str) -> float:
+        """Returns the width of the given vehicle
+
+        :param str vehicle_id: The ID of the vehicle we are interested in
+        :return: Width of the vehicle in metres
+        """
         raise NotImplementedError
 
     @abstractmethod
     def get_driving_distance(self, vehicle_id: str) -> float:
-        """Returns the driving distance of the vehicle to the end of the current edge/road"""
+        """Returns the driving distance of the vehicle to the end of the current edge/road
+
+        :param str vehicle_id: The ID of the vehicle we are interested in
+        :return: The driving distance in metres
+        """
         raise NotImplementedError
 
     @abstractmethod
     def get_speed(self, vehicle_id: str) -> float:
+        """Returns the current speed of the given vehicle
+
+        :param str vehicle_id: The ID of the vehicle we are interested in
+        :return: The speed in metres/second
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -64,4 +106,9 @@ class VehicleHandler(ABC):
 
     @abstractmethod
     def get_position(self, vehicle_id) -> Tuple[float, float]:
+        """Returns the current position of the given vehicle
+
+        :param str vehicle_id: The ID of the vehicle we are interested in
+        :return: The (x,y) position of the vehicle
+        """
         raise NotImplementedError

@@ -10,10 +10,11 @@ import matplotlib.patches as patches
 import matplotlib.transforms as transforms
 import numpy as np
 
+from intersection_control.communication.distance_based_unit import DistanceBasedUnit
 from intersection_control.core import Environment
 from intersection_control.core.environment import VehicleHandler, IntersectionHandler
 from intersection_control.core.intersection_manager import Trajectory
-from intersection_control.core.communication import Message, CommunicativeAgent
+from intersection_control.core.communication import Message
 from intersection_control.algorithms.qb_im.qb_im_intersection_manager import Intersection, InternalVehicle, \
     QBIMIntersectionManager
 from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType
@@ -40,60 +41,14 @@ class TestIntersection(unittest.TestCase):
 
 
 class TestIntersectionManager(unittest.TestCase):
-    class TestEnv(Environment):
-        class TestIntersectionHandler(IntersectionHandler):
-            def get_ids(self) -> List[str]:
-                return ["intersection"]
-
-            def get_width(self, intersection_id: str) -> float:
-                return 60
-
-            def get_height(self, intersection_id: str) -> float:
-                return 60
-
-            def get_position(self, intersection_id: str) -> Tuple[float, float]:
-                return 0, 0
-
-            def get_trajectories(self, intersection_id: str) -> Dict[str, Trajectory]:
-                return {
-                    "SN": Trajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
-                    "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
-                    "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
-                    "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))])
-                }
-
-        @patch.multiple(VehicleHandler, __abstractmethods__=set())
-        def __init__(self):
-            self.t = 0
-            self._intersections = self.TestIntersectionHandler()
-            self._vehicles = VehicleHandler()
-
-        @property
-        def intersections(self) -> IntersectionHandler:
-            return self._intersections
-
-        @property
-        def vehicles(self) -> VehicleHandler:
-            return VehicleHandler()
-
-        def get_current_time(self) -> float:
-            t = self.t
-            self.t += 1
-            return t
-
-        def step(self):
-            pass
-
-    @patch.multiple(CommunicativeAgent, __abstractmethods__=set())
     def setUp(self) -> None:
-        self.env = self.TestEnv()
+        self.env = FakeEnv()
         self.im = QBIMIntersectionManager("intersection", self.env, 40, 0.05)
-        self.vehicle = CommunicativeAgent()
-        self.vehicle.get_id = lambda: "Bob"
-        self.vehicle.send = MagicMock()
+        self.im.messaging_unit.send = MagicMock()
+        self.messaging_unit = DistanceBasedUnit("test", 100, lambda: (0, 0))
 
     def test_handles_single_reservation(self):
-        self.im.send(Message(self.vehicle, {
+        self.messaging_unit.send(self.im.messaging_unit.address, Message(self.messaging_unit.address, {
             "type": VehicleMessageType.REQUEST,
             "vehicle_id": "Bob",
             "arrival_time": 3,
@@ -113,17 +68,14 @@ class TestIntersectionManager(unittest.TestCase):
         }))
         self.im.step()
         captured_message = Captor()
-        self.vehicle.send.assert_called_with(captured_message)
-        self.assertEqual(captured_message.arg.sender, self.im)
+        self.im.messaging_unit.send.assert_called_with(self.messaging_unit.address, captured_message)
+        self.assertEqual(captured_message.arg.sender, self.im.messaging_unit.address)
         self.assertEqual(captured_message.arg.contents["type"], IMMessageType.CONFIRM)
 
-    @patch.multiple(CommunicativeAgent, __abstractmethods__=set())
     def test_rejects_conflicting_reservation(self):
-        rejected_vehicle = CommunicativeAgent()
-        rejected_vehicle.get_id = lambda: "Pat"
-        rejected_vehicle.send = MagicMock()
+        rejected_vehicle_unit = DistanceBasedUnit("reject", 100, lambda: (0, 0))
 
-        self.im.send(Message(self.vehicle, {
+        self.messaging_unit.send(self.im.messaging_unit.address, Message(self.messaging_unit.address, {
             "type": VehicleMessageType.REQUEST,
             "vehicle_id": "Bob",
             "arrival_time": 3,
@@ -142,9 +94,9 @@ class TestIntersectionManager(unittest.TestCase):
             "emergency": False
         }))
         self.im.step()
-        self.vehicle.send.assert_called_once()
+        self.im.messaging_unit.send.assert_called_once()
 
-        self.im.send(Message(rejected_vehicle, {
+        self.messaging_unit.send(self.im.messaging_unit.address, Message(rejected_vehicle_unit.address, {
             "type": VehicleMessageType.REQUEST,
             "vehicle_id": "Pat",
             "arrival_time": 3,
@@ -164,9 +116,66 @@ class TestIntersectionManager(unittest.TestCase):
         }))
         self.im.step()
         captured_message = Captor()
-        rejected_vehicle.send.assert_called_once_with(captured_message)
-        self.assertEqual(captured_message.arg.sender, self.im)
+        self.im.messaging_unit.send.assert_called_with(rejected_vehicle_unit.address, captured_message)
+        self.assertEqual(captured_message.arg.sender, self.im.messaging_unit.address)
         self.assertEqual(captured_message.arg.contents["type"], IMMessageType.REJECT)
+
+
+#################################
+# Utility classes and functions #
+#################################
+
+
+class FakeIntersectionHandler(IntersectionHandler):
+    def get_ids(self) -> List[str]:
+        return ["intersection"]
+
+    def get_width(self, intersection_id: str) -> float:
+        return 60
+
+    def get_height(self, intersection_id: str) -> float:
+        return 60
+
+    def get_position(self, intersection_id: str) -> Tuple[float, float]:
+        return 0, 0
+
+    def get_trajectories(self, intersection_id: str) -> Dict[str, Trajectory]:
+        return {
+            "SN": Trajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
+            "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
+            "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
+            "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))])
+        }
+
+
+class FakeEnv(Environment):
+    @patch.multiple(VehicleHandler, __abstractmethods__=set())
+    def __init__(self):
+        self.t = 0
+        self._intersections = FakeIntersectionHandler()
+        self._vehicles = VehicleHandler()
+
+    @property
+    def intersections(self) -> IntersectionHandler:
+        return self._intersections
+
+    @property
+    def vehicles(self) -> VehicleHandler:
+        return self._vehicles
+
+    def get_current_time(self) -> float:
+        t = self.t
+        self.t += 1
+        return t
+
+    def step(self):
+        pass
+
+    def get_removed_vehicles(self) -> List[str]:
+        return []
+
+    def get_added_vehicles(self) -> List[str]:
+        return []
 
 
 def draw(intersection: Intersection, vehicle: InternalVehicle):
