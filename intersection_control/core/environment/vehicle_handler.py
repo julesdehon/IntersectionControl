@@ -1,17 +1,17 @@
 from abc import ABC, abstractmethod
 
-from typing import List
+from typing import List, Tuple, Optional
 
 
 class VehicleHandler(ABC):
     @abstractmethod
-    def approaching(self, vehicle_id: str) -> str:
+    def approaching(self, vehicle_id: str) -> Optional[str]:
         """Returns the id of the intersection the given vehicle is approaching, or None
         if it is not approaching an intersection"""
         raise NotImplementedError
 
     @abstractmethod
-    def departing(self, vehicle_id: str) -> str:
+    def departing(self, vehicle_id: str) -> Optional[str]:
         """Returns the id of the intersection the given vehicle is departing, or None
         if it is not departing an intersection"""
         raise NotImplementedError
@@ -60,4 +60,8 @@ class VehicleHandler(ABC):
             set to. If set to -1, the vehicle's speed will be controlled by
             the environment.
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_position(self, vehicle_id) -> Tuple[float, float]:
         raise NotImplementedError

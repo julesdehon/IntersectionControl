@@ -1,6 +1,7 @@
 from typing import Optional
+
+from intersection_control.communication.distance_based_unit import DistanceBasedUnit
 from intersection_control.core import Vehicle, Environment
-from intersection_control.core import IntersectionManager
 from intersection_control.core import Message
 from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType, VehicleState
 import logging
@@ -9,34 +10,39 @@ logger = logging.getLogger(__name__)
 
 
 class QBIMVehicle(Vehicle):
-    def __init__(self, vehicle_id: str, intersection_manager: IntersectionManager, environment: Environment,
-                 communication_range: int):
+    def __init__(self, vehicle_id: str, environment: Environment, communication_range: int):
         super().__init__(vehicle_id, environment)
-        self.intersection_manager = intersection_manager
         self.communication_range = communication_range
-        self.message_queue = []
+        self.messaging_unit = DistanceBasedUnit(self.vehicle_id, self.communication_range, self.get_position)
         self.state = VehicleState.DEFAULT
         self.reservation: Optional[Reservation] = None
         self.timeout = self.environment.get_current_time()
+        self.approaching_im = None
         self.target_speed = None
+
+    def __del__(self):
+        self.messaging_unit.__del__()
 
     def step(self):
         # Handle all messages
-        for message in self.message_queue:
+        for message in self.messaging_unit.receive():
             self.handle_message(message)
-        self.message_queue = []
 
         # If we are within the communication range of the IM, update the vehicle state to APPROACHING
         # TODO: Reimplement communication range when communicating with the intersection manager
-        if self.state == VehicleState.DEFAULT and self.approaching():
-            self.state = VehicleState.APPROACHING
+        if self.state == VehicleState.DEFAULT:
+            self.approaching_im = self.approaching()
+            if self.approaching_im is not None and self.approaching_im in self.messaging_unit.discover():
+                self.state = VehicleState.APPROACHING
+            else:
+                return
 
         # If we are approaching, and do not yet have a reservation, send a reservation request to the IM
         if self.state == VehicleState.APPROACHING and self.reservation is None \
                 and self.environment.get_current_time() >= self.timeout:
             logger.debug(f"[{self.get_id()}] Sending reservation request for time {self.approximate_arrival_time()}"
                          f" and velocity {self.approximate_arrival_velocity()}")
-            self.intersection_manager.send(Message(self, {
+            self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
                 "type": VehicleMessageType.REQUEST,
                 "vehicle_id": self.get_id(),
                 "arrival_time": self.approximate_arrival_time(),
@@ -52,7 +58,7 @@ class QBIMVehicle(Vehicle):
                      or self.approximate_arrival_time() > self.reservation.late_error):
             logger.debug(f"[{self.get_id()}] Changing reservation request. Old reservation time: "
                          f"{self.reservation.arrival_time}, new approximate arrival: {self.approximate_arrival_time()}")
-            self.intersection_manager.send(Message(self, {
+            self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
                 "type": VehicleMessageType.CHANGE_REQUEST,
                 "vehicle_id": self.get_id(),
                 "arrival_time": self.approximate_arrival_time(),
@@ -74,29 +80,29 @@ class QBIMVehicle(Vehicle):
         # On departing the intersection, send a DONE message to the IM and update vehicle state to DEFAULT
         if self.state == VehicleState.IN_INTERSECTION and self.departing():
             logger.debug(f"[{self.get_id()}] Leaving the intersection")
-            self.intersection_manager.send(Message(self, {
+            self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
                 "type": VehicleMessageType.DONE
             }))
             self.reservation = None
             self.target_speed = None
+            self.approaching_im = None
             self.set_desired_speed(to=-1)
             self.state = VehicleState.DEFAULT
 
     def get_id(self) -> str:
         return self.vehicle_id
 
-    def send(self, message: Message):
-        self.message_queue.append(message)
-
     def handle_message(self, message: Message):
         if message.contents["type"] == IMMessageType.CONFIRM:
+            logger.debug(f"{self.get_id()} Received confirmation from IM")
             self.reservation = Reservation(message)
         elif message.contents["type"] == IMMessageType.REJECT:
+            logger.debug(f"{self.get_id()} Received rejection from IM")
             self.timeout = message.contents["timeout"]
             self.target_speed = self.get_speed() * 0.8
             self.set_desired_speed(to=self.target_speed)
         else:
-            logger.warning(f"[{self.get_id()}] Received unknown message type from {message.sender.get_id()}. Ignoring.")
+            logger.warning(f"[{self.get_id()}] Received unknown message type from {message.sender}. Ignoring.")
 
     def approximate_arrival_time(self):
         driving_distance = self.get_driving_distance()
@@ -107,7 +113,8 @@ class QBIMVehicle(Vehicle):
         # TODO: It should get this information by communicating through the intersection manager (or maybe we can
         #  assume this is a static part of the map, and so the vehicle would know it through some sort of google maps)
         # TODO: Maybe Vehicle::get_trajectory should return an actual trajectory rather than a string trajectory id
-        turn_speed_limit = self.intersection_manager.get_trajectories()[self.get_trajectory()].speed_limit
+        turn_speed_limit = self.environment.intersections.get_trajectories(self.approaching_im)[
+            self.get_trajectory()].speed_limit
         target_speed = self.target_speed if self.target_speed is not None else turn_speed_limit
         return min(self.get_speed(), turn_speed_limit, target_speed)
 

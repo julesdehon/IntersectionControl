@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Dict
 import logging
+
+from intersection_control.communication.distance_based_unit import DistanceBasedUnit
 from intersection_control.core import IntersectionManager
 from intersection_control.core import Message, Environment
 from intersection_control.core.environment import Trajectory
@@ -16,7 +18,7 @@ TIME_BUFFER = 1
 class QBIMIntersectionManager(IntersectionManager):
     def __init__(self, intersection_id: str, environment: Environment, granularity: int, time_discretisation: float):
         super().__init__(intersection_id, environment)
-        self.message_queue = []
+        self.messaging_unit = DistanceBasedUnit(self.intersection_id, 75, self.get_position)
         self.time_discretisation = time_discretisation
         self.tiles: Dict[((int, int), float), str] = {}  # A map from tiles and times to vehicle ids
         self.reservations = {}  # A map from vehicles to sets of tiles
@@ -27,40 +29,36 @@ class QBIMIntersectionManager(IntersectionManager):
                                          self.get_trajectories())
 
     def step(self):
-        for message in self.message_queue:
+        for message in self.messaging_unit.receive():
             self.handle_message(message)
-        self.message_queue = []
-
-    def send(self, message: Message):
-        self.message_queue.append(message)
 
     def handle_message(self, message: Message):
         if message.contents["type"] == VehicleMessageType.REQUEST \
                 or message.contents["type"] == VehicleMessageType.CHANGE_REQUEST:
             self.handle_request_message(message)
         elif message.contents["type"] == VehicleMessageType.DONE:
-            logger.debug(f"Received done message from {message.sender.get_id()}")
+            logger.debug(f"Received done message from {message.sender}")
         else:
-            logger.warning(f"Received unknown message type from {message.sender.get_id()}. Ignoring.")
+            logger.warning(f"Received unknown message type from {message.sender}. Ignoring.")
 
     def handle_request_message(self, message: Message):
         if message.contents["type"] == VehicleMessageType.CHANGE_REQUEST:
-            old_tile_times = self.reservations[message.sender.get_id()]
+            old_tile_times = self.reservations[message.sender]
             for (time, tiles) in old_tile_times:
                 for tile in tiles:
                     self.tiles.pop((tile, time))
-            self.reservations.pop(message.sender.get_id())
+            self.reservations.pop(message.sender)
 
         curr_time = self.discretise_time(self.environment.get_current_time())
-        if message.sender.get_id() in self.timeouts and self.timeouts[message.sender.get_id()] > curr_time:
-            logger.debug(f"Rejecting request for {message.sender.get_id()}: timeout not yet served")
-            message.sender.send(Message(self, {
+        if message.sender in self.timeouts and self.timeouts[message.sender] > curr_time:
+            logger.debug(f"Rejecting request for {message.sender}: timeout not yet served")
+            self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
                 "type": IMMessageType.REJECT,
-                "timeout": self.timeouts[message.sender.get_id()]
+                "timeout": self.timeouts[message.sender]
             }))
             return
         arrival_time = message.contents["arrival_time"]
-        self.timeouts[message.sender.get_id()] = curr_time + min(0.5, (arrival_time - curr_time) / 2)
+        self.timeouts[message.sender] = curr_time + min(0.5, (arrival_time - curr_time) / 2)
 
         tile_times = set()
         time = self.discretise_time(arrival_time)
@@ -78,10 +76,10 @@ class QBIMIntersectionManager(IntersectionManager):
                 buf = TIME_BUFFER  # TODO: Tune this - the time buffer around which reservation slots are checked
                 for i in np.arange(-buf, buf, self.time_discretisation):
                     if (tile, time + i) in self.tiles:
-                        logger.debug(f"Rejecting request for {message.sender.get_id()}: reservation collision")
-                        message.sender.send(Message(self, {
+                        logger.debug(f"Rejecting request for {message.sender}: reservation collision")
+                        self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
                             "type": IMMessageType.REJECT,
-                            "timeout": self.timeouts[message.sender.get_id()]
+                            "timeout": self.timeouts[message.sender]
                         }))
                         return
             time += self.time_discretisation
@@ -89,12 +87,12 @@ class QBIMIntersectionManager(IntersectionManager):
 
         for (time, tiles) in tile_times:
             for tile in tiles:
-                self.tiles[(tile, time)] = message.sender.get_id()
-        self.reservations[message.sender.get_id()] = tile_times
-        logger.debug(f"Accepting request for {message.sender.get_id()}")
-        message.sender.send(Message(self, {
+                self.tiles[(tile, time)] = message.sender
+        self.reservations[message.sender] = tile_times
+        logger.debug(f"Accepting request for {message.sender}")
+        self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
             "type": IMMessageType.CONFIRM,
-            "reservation_id": message.sender.get_id(),
+            "reservation_id": message.sender,
             "arrival_time": arrival_time,
             "arrival_velocity": message.contents["arrival_velocity"],
             "early_error": arrival_time - TIME_BUFFER / 2,

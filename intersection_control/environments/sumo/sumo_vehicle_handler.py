@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import sumolib
 import traci
 from intersection_control.core.environment import VehicleHandler
@@ -44,6 +44,9 @@ class SumoVehicleHandler(VehicleHandler):
 
     def get_speed(self, vehicle_id: str) -> float:
         return traci.vehicle.getSpeed(vehicle_id)
+
+    def get_position(self, vehicle_id) -> Tuple[float, float]:
+        return traci.vehicle.getPosition(vehicle_id)
 
     def set_desired_speed(self, vehicle_id: str, to: float):
         traci.vehicle.setSpeed(vehicle_id, to)

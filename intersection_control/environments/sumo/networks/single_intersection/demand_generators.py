@@ -1,5 +1,5 @@
 from random import random
-from typing import Dict, Tuple, List
+from typing import Dict, List
 from intersection_control.environments.sumo.sumo_environment import DemandGenerator, NewVehicleParams
 
 

@@ -21,7 +21,7 @@ from .sumo_vehicle_handler import SumoVehicleHandler
 
 class SumoEnvironment(Environment):
     def __init__(self, net_config_file: str, demand_generator: Optional[DemandGenerator] = None,
-                 time_step: float = 0.05):
+                 time_step: float = 0.05, gui: bool = True):
         net_file = next(sumolib.xml.parse_fast(net_config_file, "net-file", "value")).value
         route_file = next(sumolib.xml.parse_fast(net_config_file, "route-files", "value")).value
         self._intersections = SumoIntersectionHandler(net_file, route_file)
@@ -30,7 +30,7 @@ class SumoEnvironment(Environment):
 
         # this script has been called from the command line. It will start sumo as a
         # server, then connect and run
-        sumo_binary = sumolib.checkBinary('sumo-gui')
+        sumo_binary = sumolib.checkBinary('sumo-gui') if gui else sumolib.checkBinary('sumo')
         # this is the normal way of using traci. sumo is started as a
         # subprocess and then the python script connects and runs
         traci.start([sumo_binary, "-c", net_config_file, "--step-length", str(time_step),

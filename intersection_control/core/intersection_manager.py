@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict
-from intersection_control.core.communication import CommunicativeAgent
+from typing import Dict, Tuple
 from intersection_control.core import Environment
 from intersection_control.core.environment import Trajectory
 
@@ -13,7 +12,7 @@ Communicates with Vehicles and coordinates their movements through the intersect
 '''
 
 
-class IntersectionManager(CommunicativeAgent, ABC):
+class IntersectionManager(ABC):
     def __init__(self, intersection_id: str, environment: Environment):
         self.environment = environment
         self.intersection_id = intersection_id
@@ -40,6 +39,13 @@ class IntersectionManager(CommunicativeAgent, ABC):
         :return: The height of the intersection in metres
         """
         return self.environment.intersections.get_height(self.intersection_id)
+
+    def get_position(self) -> Tuple[float, float]:
+        """Return the position of the intersection
+
+        :return: (x,y) the position of the intersection
+        """
+        return self.environment.intersections.get_position(self.intersection_id)
 
     def get_trajectories(self) -> Dict[str, Trajectory]:
         """Return all the possible trajectories through the intersection
