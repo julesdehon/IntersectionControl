@@ -60,10 +60,19 @@ class SumoEnvironment(Environment):
     def get_added_vehicles(self) -> List[str]:
         return traci.simulation.getDepartedIDList()
 
+    def clear(self):
+        for v in traci.vehicle.getIDList():
+            traci.vehicle.remove(v)
+
 
 @dataclass
 class NewVehicleParams:
-    """Used by the SUMO environment to add a new vehicle to the environment"""
+    """Used by the SUMO environment to add a new vehicle to the environment
+
+    This contains all the necessary information required for the SUMO environment
+    to spawn a new vehicle at a particular location - namely the vehicle's id,
+    route and departure speed
+    """
     vehID: str
     routeID: str
     depart_speed: Union[float, str] = 0
@@ -74,6 +83,12 @@ class DemandGenerator(ABC):
 
     This should be subclassed to provide different demand generation implementations.
     There is an example in environments/sumo/networks/single_intersection/demand_generators.
+
+    At every time step, the SumoEnvironment will call :func:`step`, which should return
+    a list of :class:`NewVehicleParams` - one for each new vehicle that should be added
+    to the simulation in this time step. :class:`NewVehicleParams` provides all the
+    information necessary to spawn a new vehicle - namely its id, route and departure
+    speed
     """
 
     @abstractmethod

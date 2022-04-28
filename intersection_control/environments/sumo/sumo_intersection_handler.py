@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 import numpy as np
 import traci
 import sumolib
@@ -44,7 +44,7 @@ class SumoIntersectionHandler(IntersectionHandler):
     def get_trajectories(self, intersection_id: str) -> Dict[str, Trajectory]:
         return self.trajectories[intersection_id]
 
-    def _get_route_through_edge(self, edge):
+    def _get_route_through_edge(self, edge) -> Optional[str]:
         for route in self.routes:
             edges = route.edges.split()
             inner_connection = self.net.getEdge(edges[0]).getConnections(self.net.getEdge(edges[1]))[0]

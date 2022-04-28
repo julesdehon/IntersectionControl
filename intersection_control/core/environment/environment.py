@@ -61,3 +61,9 @@ class Environment(ABC):
 
         :return: List of vehicle IDs added to the environment
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def clear(self):
+        """Removes all vehicles from the environment"""
+        raise NotImplementedError
