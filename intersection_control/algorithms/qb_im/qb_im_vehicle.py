@@ -88,9 +88,6 @@ class QBIMVehicle(Vehicle):
             self.set_desired_speed(to=-1)
             self.state = VehicleState.DEFAULT
 
-    def get_id(self) -> str:
-        return self.vehicle_id
-
     def handle_message(self, message: Message):
         if message.contents["type"] == IMMessageType.CONFIRM:
             logger.debug(f"{self.get_id()} Received confirmation from IM")

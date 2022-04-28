@@ -108,9 +108,6 @@ class QBIMIntersectionManager(IntersectionManager):
             f = round
         return self.time_discretisation * f(time / self.time_discretisation)
 
-    def get_id(self) -> str:
-        return "intersection"
-
 
 class InternalVehicle:
     def __init__(self, velocity, length, width, trajectory, intersection: Intersection):

@@ -108,3 +108,10 @@ class Vehicle(ABC):
             the environment.
         """
         self.environment.vehicles.set_desired_speed(self.vehicle_id, to)
+
+    def get_id(self) -> str:
+        """Return the vehicle id
+
+        :return: vehicle id
+        """
+        return self.vehicle_id

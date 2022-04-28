@@ -53,3 +53,10 @@ class IntersectionManager(ABC):
         :return: A dictionary mapping trajectory ids to trajectories
         """
         return self.environment.intersections.get_trajectories(self.intersection_id)
+
+    def get_id(self) -> str:
+        """Returns the intersection's id
+
+        :return: intersection id
+        """
+        return self.intersection_id
