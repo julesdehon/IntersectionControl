@@ -6,8 +6,8 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
-        <net-file value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/intersection_control/environments/sumo/networks/single_intersection/intersection.net.xml"/>
-        <route-files value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/intersection_control/environments/sumo/networks/single_intersection/intersection.rou.xml"/>
+        <net-file value="intersection.net.xml"/>
+        <route-files value="intersection.rou.xml"/>
     </input>
 
 </configuration>

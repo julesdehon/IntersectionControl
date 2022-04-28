@@ -22,8 +22,10 @@ from .sumo_vehicle_handler import SumoVehicleHandler
 class SumoEnvironment(Environment):
     def __init__(self, net_config_file: str, demand_generator: Optional[DemandGenerator] = None,
                  time_step: float = 0.05, gui: bool = True):
-        net_file = next(sumolib.xml.parse_fast(net_config_file, "net-file", "value")).value
-        route_file = next(sumolib.xml.parse_fast(net_config_file, "route-files", "value")).value
+        net_file = os.path.join(os.path.dirname(net_config_file),
+                                next(sumolib.xml.parse_fast(net_config_file, "net-file", "value")).value)
+        route_file = os.path.join(os.path.dirname(net_config_file),
+                                  next(sumolib.xml.parse_fast(net_config_file, "route-files", "value")).value)
         self._intersections = SumoIntersectionHandler(net_file, route_file)
         self._vehicles = SumoVehicleHandler(net_file)
         self.demand_generator = demand_generator
