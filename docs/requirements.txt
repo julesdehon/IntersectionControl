@@ -1,0 +1,3 @@
+-r ../requirements.txt
+myst-parser~=0.17.2
+karma-sphinx-theme~=0.0.8

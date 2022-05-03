@@ -23,7 +23,10 @@ class Environment(ABC):
 
     @abstractmethod
     def get_current_time(self) -> float:
-        """Returns the current time in the environment in seconds"""
+        """Returns the current time in the environment in seconds
+
+        :return: The current time in seconds
+        """
         raise NotImplementedError
 
     @abstractmethod

@@ -98,7 +98,7 @@ class VehicleHandler(ABC):
 
         :param str vehicle_id: The ID of the vehicle you would like to change
             the desired speed of
-        :param to: The speed (in m/s) you would like the desired speed to be
+        :param float to: The speed (in m/s) you would like the desired speed to be
             set to. If set to -1, the vehicle's speed will be controlled by
             the environment.
         """
