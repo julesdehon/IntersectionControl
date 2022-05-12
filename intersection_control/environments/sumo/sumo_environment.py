@@ -21,7 +21,7 @@ from .sumo_vehicle_handler import SumoVehicleHandler
 
 class SumoEnvironment(Environment):
     def __init__(self, net_config_file: str, demand_generator: Optional[DemandGenerator] = None,
-                 time_step: float = 0.05, gui: bool = True):
+                 time_step: float = 0.05, gui: bool = True, warnings=True):
         net_file = os.path.join(os.path.dirname(net_config_file),
                                 next(sumolib.xml.parse_fast(net_config_file, "net-file", "value")).value)
         route_file = os.path.join(os.path.dirname(net_config_file),
@@ -35,9 +35,20 @@ class SumoEnvironment(Environment):
         sumo_binary = sumolib.checkBinary('sumo-gui') if gui else sumolib.checkBinary('sumo')
         # this is the normal way of using traci. sumo is started as a
         # subprocess and then the python script connects and runs
-        traci.start([sumo_binary, "-c", net_config_file, "--step-length", str(time_step),
-                     "--collision.check-junctions", "--default.speeddev", "0"])
+        sumo_cmd = [
+            sumo_binary,
+            "-c", net_config_file,
+            "--step-length", str(time_step),
+            "--collision.check-junctions",
+            "--default.speeddev", "0"
+        ]
+        if not warnings:
+            sumo_cmd.append("--no-warnings")
+        traci.start(sumo_cmd)
         traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
+
+    def close(self):
+        traci.close(False)
 
     @property
     def intersections(self) -> IntersectionHandler:
@@ -51,10 +62,14 @@ class SumoEnvironment(Environment):
         return traci.simulation.getTime()
 
     def step(self):
-        traci.simulationStep()
         if self.demand_generator is not None:
             for v in self.demand_generator.step():
-                traci.vehicle.add(v.vehID, v.routeID, departSpeed=v.depart_speed)
+                traci.vehicle.add(v.veh_id, v.route_id, departSpeed=v.depart_speed, departPos=v.depart_pos)
+                traci.vehicle.setColor(v.veh_id, [255, 255, 255, 255])
+                if v.control_type == ControlType.MANUAL:
+                    traci.vehicle.setSpeedMode(v.veh_id, 0b100110)
+                    traci.vehicle.setSpeed(v.veh_id, v.depart_speed)  # The vehicle won't accelerate to the road's limit
+        traci.simulationStep()
 
     def get_removed_vehicles(self) -> List[str]:
         return traci.simulation.getArrivedIDList()
@@ -65,6 +80,25 @@ class SumoEnvironment(Environment):
     def clear(self):
         for v in traci.vehicle.getIDList():
             traci.vehicle.remove(v)
+        traci.simulationStep()
+
+
+class ControlType:
+    """Defines the level of control we have over a vehicle in SUMO
+
+    Will affect the behaviour of the set_desired_speed method
+
+    :cvar int MANUAL: The vehicle will exactly follow the speed provided to it
+        using the set_desired_speed method - this may lead to collisions if this
+        causes the vehicle to catch up with the vehicle ahead and the speed is not
+        adjusted manually to prevent the collision
+    :cvar int WITH_SAFETY_PRECAUTIONS: The vehicle will attempt to reach the desired
+        speed, but will slow down to avoid collisions with other vehicles. This can
+        be thought of as driving with a collision detection and avoidance system
+        in an autonomous vehicle.
+    """
+    MANUAL = 0
+    WITH_SAFETY_PRECAUTIONS = 1
 
 
 @dataclass
@@ -74,10 +108,19 @@ class NewVehicleParams:
     This contains all the necessary information required for the SUMO environment
     to spawn a new vehicle at a particular location - namely the vehicle's id,
     route and departure speed
+
+    :ivar str veh_id: The ID of the vehicle that should be spawned
+    :ivar str route_id: The ID of the route that the vehicle should be spawned on
+    :ivar Union[float, str] depart_speed: The initial speed the vehicle should have when it is spawned
+    :ivar float depart_pos: The distance along the trajectory the vehicle should be spawned at
+    :ivar ControlType control_type: The level of control the set_desired_speed method will have on
+        the given vehicle
     """
-    vehID: str
-    routeID: str
+    veh_id: str
+    route_id: str
     depart_speed: Union[float, str] = 0
+    depart_pos: float = 0
+    control_type: ControlType = ControlType.WITH_SAFETY_PRECAUTIONS
 
 
 class DemandGenerator(ABC):
@@ -101,3 +144,30 @@ class DemandGenerator(ABC):
             in this simulation step
         """
         raise NotImplementedError
+
+
+class ScenarioGenerator(DemandGenerator):
+    """Demand generator that produces vehicles at predefined locations
+    either on the very first call to :func:`step`, or the call immediately
+    following a call to :func:`reset`.
+    """
+
+    def __init__(self, new_vehicle_params: List[NewVehicleParams]):
+        """Construct a RandomDemandGenerator
+
+        :param List[NewVehicleParams] new_vehicle_params: A list of NewVehicleParams
+            describing the departure parameters of the vehicles that are spawned
+            initially and after each reset
+        """
+        self.should_spawn = True
+        self.new_vehicle_params = new_vehicle_params.copy()
+
+    def step(self) -> List[NewVehicleParams]:
+        if not self.should_spawn:
+            return []
+
+        self.should_spawn = False
+        return self.new_vehicle_params.copy()
+
+    def reset(self):
+        self.should_spawn = True

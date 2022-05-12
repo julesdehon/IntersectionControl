@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2022-05-11 16:17:05 by Eclipse SUMO netedit Version 1.12.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/intersection_control/environments/sumo/networks/single_road/single_road.net.xml"/>
+    </input>
+
+    <output>
+        <output-file value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/intersection_control/environments/sumo/networks/single_road/single_road.net.xml"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="false"/>
+    </processing>
+
+    <junctions>
+        <no-internal-links value="true"/>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.5"/>
+        <rectangular-lane-cut value="false"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="false"/>
+    </pedestrian>
+
+    <netedit>
+        <route-files value="/Users/julesdehon/Documents/Uni/year-3/individual-project/Simulations/DuckieIntersectionSimulation/intersection_control/environments/sumo/networks/single_road/single_road.rou.xml"/>
+    </netedit>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,100.00,1000.00,100.00" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+
+    <edge id="E0" from="J1" to="J2" priority="-1" length="1000.00">
+        <lane id="E0_0" index="0" speed="50.00" length="1000.00" shape="0.00,98.40 1000.00,98.40"/>
+    </edge>
+
+    <junction id="J1" type="dead_end" x="0.00" y="100.00" incLanes="" intLanes="" shape="0.00,100.00 0.00,96.80"/>
+    <junction id="J2" type="dead_end" x="1000.00" y="100.00" incLanes="E0_0" intLanes="" shape="1000.00,96.80 1000.00,100.00"/>
+
+</net>
