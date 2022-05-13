@@ -48,7 +48,8 @@ class SumoEnvironment(Environment):
         traci.start(sumo_cmd)
         traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
 
-    def close(self):
+    @staticmethod
+    def close():
         traci.close(False)
 
     @property

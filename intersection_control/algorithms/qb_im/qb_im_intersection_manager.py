@@ -122,8 +122,9 @@ class InternalVehicle:
 
     def is_in_intersection(self):
         intersection_shape = np.array([self.intersection.width, self.intersection.height])
-        return ((-intersection_shape / 2 <= self.position) & (self.position <= intersection_shape / 2)).all() \
-               and self.curr_trajectory_slice < len(self.trajectory) - 1
+        return ((-intersection_shape / 2 <= self.position) & (
+                    self.position <= intersection_shape / 2)).all() and self.curr_trajectory_slice < len(
+            self.trajectory) - 1
 
     def update(self, dt):
         distance_moved = self.velocity * dt

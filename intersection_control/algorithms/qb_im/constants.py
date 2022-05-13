@@ -53,7 +53,8 @@ class VehicleMessageType:
     """
     This message is sent when the vehicle has completed its traversal of the
     intersection. While it communicates the same information as the Cancel message,
-    there may be behavior tied to the Cancel message which should not occur when a vehicle successfully completes the trip across the intersection. Additionally, this message
+    there may be behavior tied to the Cancel message which should not occur when a vehicle 
+    successfully completes the trip across the intersection. Additionally, this message
     could be extended in order to communicate statistics for each vehicle, which could
     then be recorded in order to analyze the performance of the intersection manager.
     This message can be used to collect statistics for each vehicle, which can be recorded

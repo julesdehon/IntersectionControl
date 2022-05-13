@@ -1,4 +1,3 @@
-from functools import reduce
 from typing import Optional, List
 import numpy as np
 
@@ -103,6 +102,7 @@ class RLVehicle(Vehicle):
     def _convert_trajectory(self, trajectory):
         return self.trajectory_list.index(trajectory)
 
-    def _distance_reward(self, distance):
+    @staticmethod
+    def _distance_reward(distance):
         distance = max(distance, 0.001)
         return 5 * np.log(0.1 * distance)

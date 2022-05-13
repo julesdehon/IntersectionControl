@@ -27,7 +27,8 @@ class TestIntersection(unittest.TestCase):
             "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
             "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
             "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))]),
-            "WN": Trajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)), np.array((6., 12.)), np.array((10., 30.))])
+            "WN": Trajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)),
+                                  np.array((6., 12.)), np.array((10., 30.))])
         }
         self.intersection = Intersection(60, 60, 10, trajectories)
         self.vehicle = InternalVehicle(10,  # velocity
@@ -177,9 +178,12 @@ class FakeEnv(Environment):
     def get_added_vehicles(self) -> List[str]:
         return []
 
+    def clear(self):
+        pass
+
 
 def draw(intersection: Intersection, vehicle: InternalVehicle):
-    def animate(i):
+    def animate(_):
         for p in list(ax.patches):
             p.remove()
         x, y = vehicle.position
@@ -217,7 +221,7 @@ def draw(intersection: Intersection, vehicle: InternalVehicle):
     ax.set_ylim((-intersection.height / 2 - 1, intersection.height / 2 + 1))
     ax.grid()
 
-    ani = FuncAnimation(fig, animate, frames=20, interval=500, repeat=False)
+    FuncAnimation(fig, animate, frames=20, interval=500, repeat=False)
 
     plt.show()
 
@@ -226,10 +230,10 @@ def color_tile(ax, tile, intersection):
     i, j = tile
     x_coord = (i * (intersection.width / intersection.granularity)) - intersection.width / 2
     y_coord = (j * (intersection.height / intersection.granularity)) - intersection.height / 2
-    patch = patches.Rectangle((x_coord, y_coord), intersection.width / intersection.granularity,
-                              intersection.height / intersection.granularity, linewidth=1, edgecolor='none',
-                              facecolor='gray', zorder=1)
-    ax.add_patch(patch)
+    rect = patches.Rectangle((x_coord, y_coord), intersection.width / intersection.granularity,
+                             intersection.height / intersection.granularity, linewidth=1, edgecolor='none',
+                             facecolor='gray', zorder=1)
+    ax.add_patch(rect)
 
 
 if __name__ == '__main__':
