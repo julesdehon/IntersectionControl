@@ -47,6 +47,14 @@ class MessagingUnit(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def broadcast(self, message: Message):
+        """Sends a message to all reachable MessagingUnits
+
+        :param Message message: The message to be broadcast
+        """
+        raise NotImplementedError
+
 
 class Message:
     """A class to represent a Message

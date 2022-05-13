@@ -112,3 +112,32 @@ class VehicleHandler(ABC):
         :return: The (x,y) position of the vehicle
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def get_direction(self, vehicle_id) -> float:
+        """Returns the direction the given vehicle is currently facing in radians
+
+        The positive horizontal axis is taken to have a direction of 0, and the
+        angle increases as the vehicle rotates clockwise like so:
+
+              3pi/2
+               ^
+               |
+        pi <---+---> 0
+               |
+               v
+              pi/2
+
+        :param str vehicle_id: The ID of the vehicle we want to get the heading of
+        :return: The direction of the vehicle in radians
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_speed_limit(self, vehicle_id) -> float:
+        """Returns the maximum speed the given vehicle should be travelling at
+
+        This will usually be determined by the speed limit of the road the vehicle
+        is currently on
+        """
+        raise NotImplementedError

@@ -20,8 +20,8 @@ class QBIMVehicle(Vehicle):
         self.approaching_im = None
         self.target_speed = None
 
-    def __del__(self):
-        self.messaging_unit.__del__()
+    def destroy(self):
+        self.messaging_unit.destroy()
 
     def step(self):
         # Handle all messages

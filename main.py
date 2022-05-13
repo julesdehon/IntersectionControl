@@ -38,7 +38,7 @@ def main():
         env.step()
         removed_vehicles = {v for v in vehicles if v.get_id() in env.get_removed_vehicles()}
         for v in removed_vehicles:
-            v.__del__()
+            v.destroy()
         new_vehicles = {QBIMVehicle(vehicle_id, env, communication_range=75) for vehicle_id in env.get_added_vehicles()}
         vehicles = (vehicles - removed_vehicles).union(new_vehicles)
         for vehicle in vehicles:

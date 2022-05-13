@@ -40,7 +40,8 @@ class SumoEnvironment(Environment):
             "-c", net_config_file,
             "--step-length", str(time_step),
             "--collision.check-junctions",
-            "--default.speeddev", "0"
+            "--default.speeddev", "0",
+            "--collision.action", "remove"
         ]
         if not warnings:
             sumo_cmd.append("--no-warnings")
@@ -80,7 +81,9 @@ class SumoEnvironment(Environment):
     def clear(self):
         for v in traci.vehicle.getIDList():
             traci.vehicle.remove(v)
-        traci.simulationStep()
+        traci.simulation.clearPending()
+        for _ in range(10):
+            traci.simulationStep()  # Sometimes takes a few tries to flush them out
 
 
 class ControlType:

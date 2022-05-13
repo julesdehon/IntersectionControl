@@ -18,21 +18,21 @@ class DistanceBasedUnit(MessagingUnit):
     implementation may be required.
 
     .. warning::
-        :func:`destroy` must be called explicitly when the unit goes out of scope
+        :func:`__del__` must be called explicitly when the unit goes out of scope
         (the IM or vehicle using it goes out of scope) - otherwise it will never
         be removed from the network.
     """
     _network: Dict[str, DistanceBasedUnit] = {}
 
     def __init__(self, address: str, communication_range: float, get_position: Callable[[], Tuple[float, float]]):
-        assert address not in self._network
+        # assert address not in self._network
         self.address = address
         self.get_position = get_position
         self.communication_range = communication_range
         self._network[self.address] = self
         self._message_queue: List[Message] = []
 
-    def __del__(self):
+    def destroy(self):
         """This must be called explicitly when the unit goes out of scope
         (the IM or vehicle using it goes out of scope) - otherwise it will never
         be removed from the network."""
@@ -40,7 +40,7 @@ class DistanceBasedUnit(MessagingUnit):
             del self._network[self.address]
 
     def discover(self) -> List[str]:
-        return [address for address, unit in self._network.items() if self._within_range(unit)]
+        return [address for address, unit in list(self._network.items()) if self._within_range(unit)]
 
     def send(self, address: str, message: Message):
         other_unit = self._network.get(address)
@@ -51,6 +51,12 @@ class DistanceBasedUnit(MessagingUnit):
         messages = self._message_queue
         self._message_queue = []
         return messages
+
+    def broadcast(self, message: Message):
+        for address in self.discover():
+            if address == self.address:
+                continue
+            self.send(address, message)
 
     def _within_range(self, other_unit: DistanceBasedUnit):
         x, y = self.get_position()

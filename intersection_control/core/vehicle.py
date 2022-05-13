@@ -100,6 +100,24 @@ class Vehicle(ABC):
         """
         return self.environment.vehicles.get_position(self.vehicle_id)
 
+    def get_direction(self) -> float:
+        """Returns the direction the given vehicle is currently facing in radians
+
+        The positive horizontal axis is taken to have a direction of 0, and the
+        angle increases as the vehicle rotates clockwise like so:
+
+              3pi/2
+               ^
+               |
+        pi <---+---> 0
+               |
+               v
+              pi/2
+
+        :return: The direction of the vehicle in radians
+        """
+        return self.environment.vehicles.get_direction(self.vehicle_id)
+
     def set_desired_speed(self, to: float):
         """Sets the desired speed of the given vehicle
 
@@ -115,3 +133,11 @@ class Vehicle(ABC):
         :return: vehicle id
         """
         return self.vehicle_id
+
+    def get_speed_limit(self) -> float:
+        """Returns the maximum speed the vehicle should be travelling at
+
+        This will usually be determined by the speed limit of the road the vehicle
+        is currently on
+        """
+        return self.environment.vehicles.get_speed_limit(self.vehicle_id)

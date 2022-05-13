@@ -1,3 +1,4 @@
+import math
 from typing import List, Dict, Optional, Tuple
 import sumolib
 import traci
@@ -48,8 +49,14 @@ class SumoVehicleHandler(VehicleHandler):
     def get_position(self, vehicle_id) -> Tuple[float, float]:
         return traci.vehicle.getPosition(vehicle_id)
 
+    def get_direction(self, vehicle_id) -> float:
+        return (math.radians(traci.vehicle.getAngle(vehicle_id)) - math.pi / 2) % (2 * math.pi)  # Transform as required
+
     def set_desired_speed(self, vehicle_id: str, to: float):
         traci.vehicle.setSpeed(vehicle_id, to)
+
+    def get_speed_limit(self, vehicle_id) -> float:
+        return traci.vehicle.getAllowedSpeed(vehicle_id)
 
     def _get_intersections_entered_by_lanes(self) -> Dict[str, str]:
         intersections = [node for node in self.net.getNodes() if node.getType() == "traffic_light"]
