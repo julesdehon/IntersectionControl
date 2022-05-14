@@ -1,6 +1,7 @@
 # IntersectionControl
 
 [![test](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml/badge.svg)](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml)
+[![Documentation Status](https://readthedocs.org/projects/intersectioncontrol/badge/?version=latest)](https://intersectioncontrol.readthedocs.io/en/latest/?badge=latest)
 
 An environment-agnostic framework for comparing intersection control algorithms
 
