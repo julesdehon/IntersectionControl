@@ -1,5 +1,7 @@
 # IntersectionControl
 
+[![test](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml/badge.svg)](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml)
+
 An environment-agnostic framework for comparing intersection control algorithms
 
 ## Getting Started
