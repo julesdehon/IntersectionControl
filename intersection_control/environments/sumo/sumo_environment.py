@@ -3,7 +3,8 @@ import sys
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Union, Optional
+from random import random
+from typing import List, Union, Optional, Dict
 
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -175,3 +176,34 @@ class ScenarioGenerator(DemandGenerator):
 
     def reset(self):
         self.should_spawn = True
+
+
+class RandomDemandGenerator(DemandGenerator):
+    """Generates vehicles with a Bernoulli distribution in different routes
+
+    Will spawn vehicles with a probability, and on a route, provided to this
+    DemandGenerator's constructor.
+    """
+
+    def __init__(self, rates: Dict[str, float], time_step_length: float):
+        """Construct a RandomDemandGenerator
+
+        :param Dict[str, float] rates: A dictionary mapping route IDs to the
+            average vehicles per minute that should be produced on that route
+        :param float time_step_length: The length of a single time step in
+            the sumo simulation
+        """
+        self.time_step_length = time_step_length
+
+        # convert rates from vehicles per minute to a probability of a spawn event occurring at each time step
+        self.spawn_probabilities = {route: rate * self.time_step_length / 60 for route, rate in rates.items()}
+        self.current_id = 0
+
+    def step(self) -> List[NewVehicleParams]:
+        return [NewVehicleParams(self.get_next_id(), route, depart_speed=10) for route, prob in
+                self.spawn_probabilities.items() if random() <= prob]
+
+    def get_next_id(self) -> str:
+        result = self.current_id
+        self.current_id += 1
+        return str(result)
