@@ -4,7 +4,7 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
 import gym.spaces as spaces
 
-from intersection_control.misc.single_lane.simple_rl_vehicle import SimpleRLVehicle
+from misc.single_lane.simple_rl_vehicle import SimpleRLVehicle
 from intersection_control.environments import SumoEnvironment
 from intersection_control.environments.sumo import ScenarioGenerator
 from intersection_control.environments.sumo.sumo_environment import NewVehicleParams, ControlType
@@ -23,8 +23,9 @@ class SingleRoadEnv(MultiAgentEnv):
             NewVehicleParams("v_3", "r_0", 5, 225, ControlType.MANUAL)
         ]
         self.demand_generator = ScenarioGenerator(initial_vehicle_spawns)
-        self.env = SumoEnvironment("../../environments/sumo/networks/single_road/single_road.sumocfg",
-                                   demand_generator=self.demand_generator, time_step=0.1, gui=gui, warnings=False)
+        self.env = SumoEnvironment(
+            "../../intersection_control/environments/sumo/networks/single_road/single_road.sumocfg",
+            demand_generator=self.demand_generator, time_step=0.1, gui=gui, warnings=False)
         self.env.step()  # Load all the vehicles in
 
         self.vehicles: Dict[str, SimpleRLVehicle] = {vehicle_id: SimpleRLVehicle(vehicle_id, self.env) for vehicle_id in

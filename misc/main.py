@@ -26,7 +26,7 @@ def main():
         "NE": 2, "NS": 2, "NW": 2, "EN": 2, "ES": 2, "EW": 2, "SN": 2, "SE": 2, "SW": 2, "WN": 2, "WE": 2, "WS": 2
     }, 0.05)
     # demand_generator = ConflictingDemandGenerator()
-    env = SumoEnvironment("intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
+    env = SumoEnvironment("../intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
                           demand_generator=demand_generator, time_step=0.05, gui=True)
 
     intersection_managers = {QBIMIntersectionManager(intersection_id, env, 10, 0.05) for intersection_id in
