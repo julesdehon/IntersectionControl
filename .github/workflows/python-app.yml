@@ -36,4 +36,4 @@ jobs:
         flake8 . --count --exit-zero --statistics
     - name: Test with unittest
       run: |
-        python -m unittest
+        python -m unittest discover -s test
