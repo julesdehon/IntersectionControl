@@ -4,7 +4,7 @@ import logging
 from intersection_control.environments.sumo import SumoEnvironment
 from intersection_control.algorithms.qb_im import QBIMIntersectionManager
 from intersection_control.algorithms.qb_im import QBIMVehicle
-from intersection_control.environments.sumo.networks.single_intersection.demand_generators import RandomDemandGenerator
+from intersection_control.environments.sumo.sumo_environment import RandomDemandGenerator
 
 STEP_COUNT = 360000  # 1 Hour
 
