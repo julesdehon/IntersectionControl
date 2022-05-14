@@ -4,10 +4,6 @@ from unittest.mock import MagicMock, patch
 from callee import Captor
 import math
 
-from matplotlib.animation import FuncAnimation
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import matplotlib.transforms as transforms
 import numpy as np
 
 from intersection_control.communication.distance_based_unit import DistanceBasedUnit
@@ -30,15 +26,40 @@ class TestIntersection(unittest.TestCase):
             "WN": Trajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)),
                                   np.array((6., 12.)), np.array((10., 30.))])
         }
-        self.intersection = Intersection(60, 60, 10, trajectories)
-        self.vehicle = InternalVehicle(10,  # velocity
-                                       5,  # length
-                                       2,  # width
-                                       "WN",  # arrival_lane
-                                       self.intersection)  # intersection
+        self.intersection = Intersection(60, 60, 20, trajectories)
 
-    def test_get_tiles_for_vehicle(self):
-        draw(self.intersection, self.vehicle)
+    def test_tiles_for_straight_trajectory_are_along_the_same_axis(self):
+        vehicle = InternalVehicle(10,  # velocity
+                                  5,  # length
+                                  2,  # width
+                                  "NS",  # arrival_lane
+                                  self.intersection)  # intersection
+        all_traversed_tiles = []
+        while vehicle.is_in_intersection():
+            all_traversed_tiles.append(self.intersection.get_tiles_for_vehicle(vehicle, (2, 2)))
+            vehicle.update(0.25)
+        x_coords = [{x for (x, _) in tiles} for tiles in all_traversed_tiles]
+        for i in range(len(x_coords) - 1):
+            self.assertSetEqual(x_coords[i], x_coords[i + 1])
+
+    def test_tiles_at_each_timestep_are_adjacent(self):
+        vehicle = InternalVehicle(10,  # velocity
+                                  5,  # length
+                                  2,  # width
+                                  "WN",  # arrival_lane
+                                  self.intersection)  # intersection
+
+        def adjacent(tile1, tile2):
+            (x1, y1) = tile1
+            (x2, y2) = tile2
+            return (abs(x1 - x2) == 1) ^ (abs(y2 - y1) == 1)
+
+        while vehicle.is_in_intersection():
+            tiles = self.intersection.get_tiles_for_vehicle(vehicle, (2, 2))
+            for tile in tiles:
+                # Tile is adjacent to at least one other
+                self.assertTrue(any([adjacent(tile, other) for other in tiles]))
+            vehicle.update(0.25)
 
 
 class TestIntersectionManager(unittest.TestCase):
@@ -180,60 +201,6 @@ class FakeEnv(Environment):
 
     def clear(self):
         pass
-
-
-def draw(intersection: Intersection, vehicle: InternalVehicle):
-    def animate(_):
-        for p in list(ax.patches):
-            p.remove()
-        x, y = vehicle.position
-        x -= vehicle.width / 2
-        y -= vehicle.length / 2
-        car = patches.Rectangle((x, y), vehicle.width, vehicle.length, linewidth=1, edgecolor='r',
-                                facecolor='none', zorder=5)
-        vehicle_direction = vehicle.get_direction_vector()
-        angle = np.arctan2(vehicle_direction[1], vehicle_direction[0])
-        t = transforms.Affine2D().rotate_around(vehicle.position[0], vehicle.position[1],
-                                                angle - math.radians(90)) + ax.transData
-        car.set_transform(t)
-
-        ax.add_patch(car)
-
-        tiles = intersection.get_tiles_for_vehicle(vehicle, (2, 2))
-        for tile in tiles:
-            color_tile(ax, tile, intersection)
-
-        vehicle.update(0.25)
-
-    fig, ax = plt.subplots()
-    ax.axis('equal')
-    ax.spines['left'].set_position('zero')
-    ax.spines['right'].set_color('none')
-    ax.spines['bottom'].set_position('zero')
-    ax.spines['top'].set_color('none')
-    ax.xaxis.set_ticks_position('bottom')
-    ax.yaxis.set_ticks_position('left')
-    ax.set_xticks(np.arange(-intersection.width / 2, intersection.width / 2,
-                            intersection.width / intersection.granularity))
-    ax.set_yticks(np.arange(-intersection.height / 2, intersection.height / 2,
-                            intersection.height / intersection.granularity))
-    ax.set_xlim((-intersection.width / 2 - 1, intersection.width / 2 + 1))
-    ax.set_ylim((-intersection.height / 2 - 1, intersection.height / 2 + 1))
-    ax.grid()
-
-    FuncAnimation(fig, animate, frames=20, interval=500, repeat=False)
-
-    plt.show()
-
-
-def color_tile(ax, tile, intersection):
-    i, j = tile
-    x_coord = (i * (intersection.width / intersection.granularity)) - intersection.width / 2
-    y_coord = (j * (intersection.height / intersection.granularity)) - intersection.height / 2
-    rect = patches.Rectangle((x_coord, y_coord), intersection.width / intersection.granularity,
-                             intersection.height / intersection.granularity, linewidth=1, edgecolor='none',
-                             facecolor='gray', zorder=1)
-    ax.add_patch(rect)
 
 
 if __name__ == '__main__':

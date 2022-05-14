@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict
+from typing import Dict, Tuple, FrozenSet
 import logging
 
 from intersection_control.communication.distance_based_unit import DistanceBasedUnit
@@ -123,7 +123,7 @@ class InternalVehicle:
     def is_in_intersection(self):
         intersection_shape = np.array([self.intersection.width, self.intersection.height])
         return ((-intersection_shape / 2 <= self.position) & (
-                    self.position <= intersection_shape / 2)).all() and self.curr_trajectory_slice < len(
+                self.position <= intersection_shape / 2)).all() and self.curr_trajectory_slice < len(
             self.trajectory) - 1
 
     def update(self, dt):
@@ -138,7 +138,7 @@ class InternalVehicle:
             dist_moved = min(distance, dist_to_waypoint)
             self.position += vector_to_waypoint * (dist_moved / dist_to_waypoint)
             distance -= dist_moved
-            if distance > 0:
+            if (self.get_direction_vector() == [0, 0]).all():
                 self.curr_trajectory_slice += 1
 
     def get_direction_vector(self):
@@ -172,7 +172,8 @@ class Intersection:
         self.height = height
         self.trajectories = trajectories
 
-    def get_tiles_for_vehicle(self, vehicle: InternalVehicle, safety_buffer: (float, float)) -> [(int, int)]:
+    def get_tiles_for_vehicle(self, vehicle: InternalVehicle,
+                              safety_buffer: Tuple[float, float]) -> FrozenSet[Tuple[int, int]]:
         # normalised perpendicular vectors
         v1 = vehicle.get_direction_vector() / np.linalg.norm(vehicle.get_direction_vector())
         v2 = np.array([-v1[1], v1[0]])
