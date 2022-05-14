@@ -1,2 +1,6 @@
-__pycache__
+# Compiled sources
 docs/build
+dist
+
+# Reinforcement Learning checkpoints
+checkpoints
