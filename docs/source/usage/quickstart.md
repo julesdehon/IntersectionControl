@@ -1,30 +1,34 @@
 # Getting started
 
 ## Running an experiment/simulation
-To run a simulation, you will need an implemented algorithm (which determines the behaviour of vehicles and 
-intersection managers through the intersection) and an environment (the simulation environment in which the 
-experiment runs). For a more detailed description of the structure of IntersectionControl, refer to the [Project 
-Structure](../overview/overview.md) page.
 
-Let's see how you would set up an experiment for a query-based intersection control algorithm in the Sumo simulation 
+To run a simulation, you will need an implemented algorithm (which determines the behaviour of vehicles and intersection
+managers through the intersection) and an environment (the simulation environment in which the experiment runs). For a
+more detailed description of the structure of IntersectionControl, refer to
+the [Project Structure](../overview/overview.md) page.
+
+Let's see how you would set up an experiment for a query-based intersection control algorithm in the Sumo simulation
 environment.
 
-Note that you will need Sumo network (`.net.xml` and `.sumocfg`) files to run a Sumo simulation. A simple 
-single-laned 4-way intersection network configuration can be found in 
+Note that you will need Sumo network (`.net.xml` and `.sumocfg`) files to run a Sumo simulation. A simple single-laned
+4-way intersection network configuration can be found in
 `intersection_control/environments/sumo/networks/single_intersection`
 
 Import the desired algorithm/environment:
+
 ```python
 from intersection_control.environments.sumo import SumoEnvironment, RandomDemandGenerator
 from intersection_control.algorithms.qb_im import QBIMIntersectionManager, QBIMVehicle
 ```
 
 Instantiate the environment:
+
 ```{note}
 The RandomDemandGenerator here is used to programmatically add vehicles to specifically to the Sumo environment. 
 Alternatively, Sumo based [demand generation](https://sumo.dlr.de/docs/Demand/Introduction_to_demand_modelling_in_SUMO.html)
 could be used
 ```
+
 ```python
 demand_generator = RandomDemandGenerator({
     "NE": 2, "NS": 2, "NW": 2, "EN": 2, "ES": 2, "EW": 2,
@@ -35,6 +39,7 @@ env = SumoEnvironment("path/to/intersection.sumocfg",
 ```
 
 Instantiate the vehicles and intersection managers:
+
 ```python
 intersection_managers = {QBIMIntersectionManager(intersection_id, env, 10, 0.05) for intersection_id in
                          env.intersections.get_ids()}  # In this Sumo network there is only one intersection
@@ -42,6 +47,7 @@ vehicles = {QBIMVehicle(vehicle_id, env, communication_range=75) for vehicle_id 
 ```
 
 Run the main loop:
+
 ```python
 STEP_COUNT = 360000  # 1 hour
 for _ in range(STEP_COUNT):
@@ -63,12 +69,13 @@ When run, this should result in a simulation that looks something like this:
 
 ## Implementing an intersection control algorithm
 
-This is done by creating a new subclass of `intersection_control.core.Vehicle` and `intersection_control.core.
-IntersectionManager`. Note that if you would like to implement a decentralised control algorithm (one where there is 
-no central intersection manager), you would only have to subclass `Vehicle`.
+This is done by creating a new subclass of {class}`intersection_control.core.algorithm.Vehicle`
+and {class}`intersection_control.core.algorithm.IntersectionManager`. Note that if you would like to implement a 
+decentralised control algorithm (one where there is no central intersection manager), you would only have to subclass
+{class}`Vehicle <intersection_control.core.algorithm.Vehicle>`.
 
-Let's create a very simple and stupid algorithm where at every step, vehicles communicate their speed to the 
-nearby intersection manager, and then increases its speed by 1m/s:
+Let's create a very simple and stupid algorithm where at every step, vehicles communicate their speed to the nearby
+intersection manager, and then increases its speed by 1m/s:
 
 ```python
 from intersection_control.core import Vehicle, IntersectionManager, Environment, Message
@@ -101,18 +108,20 @@ class StupidIntersectionManager(IntersectionManager):
             print(f"Received message from {message.sender}: {message.contents}")
 ```
 
-As you can see, implementing an intersection control algorithm simply requires defining the `step()` function for 
-each vehicle and intersection manager, which will determine its behaviour at each simulation step.
+As you can see, implementing an intersection control algorithm simply requires defining the
+{meth}`step() <intersection_control.core.algorithm.Vehicle.step>` function for each vehicle and intersection manager,
+which will determine its behaviour at each simulation step.
 
 Unsurprisingly, this algorithm leads to lots of crashes:
 ![Stupid Simulation](../image/stupid-sim.gif)
 
 ## Implementing an intersection environment
 
-Implementing your own intersection environment is much more involved that implementing a control algorithm. To do 
-this, you will need to subclass `intersection_control.core.environment.Environment`, `intersection_control.core.
-environment.VehicleHandler` and `intersection_control.core.environment.IntersectionHandler`. Each of those classes 
-will have a number of abstract methods that will need to be implemented.
+Implementing your own intersection environment is much more involved that implementing a control algorithm. To do this,
+you will need to subclass {class}`intersection_control.core.environment.Environment`,
+{class}`intersection_control.core.environment.VehicleHandler` and
+{class}`intersection_control.core.environment.IntersectionHandler`. Each of those classes will have a number of abstract
+methods that will need to be implemented.
 
 ```python
 from typing import List, Tuple
