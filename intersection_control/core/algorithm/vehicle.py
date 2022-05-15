@@ -104,15 +104,15 @@ class Vehicle(ABC):
         """Returns the direction the given vehicle is currently facing in radians
 
         The positive horizontal axis is taken to have a direction of 0, and the
-        angle increases as the vehicle rotates clockwise like so:
+        angle increases as the vehicle rotates clockwise like so::
 
-              3pi/2
-               ^
-               |
-        pi <---+---> 0
-               |
-               v
-              pi/2
+                 3pi/2
+                   ^
+                   |
+            pi <---+---> 0
+                   |
+                   v
+                  pi/2
 
         :return: The direction of the vehicle in radians
         """
