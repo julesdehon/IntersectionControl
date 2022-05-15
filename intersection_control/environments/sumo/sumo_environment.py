@@ -185,7 +185,8 @@ class RandomDemandGenerator(DemandGenerator):
     DemandGenerator's constructor.
     """
 
-    def __init__(self, rates: Dict[str, float], time_step_length: float):
+    def __init__(self, rates: Dict[str, float], time_step_length: float, depart_speed: float = 10,
+                 control_type: ControlType = ControlType.WITH_SAFETY_PRECAUTIONS):
         """Construct a RandomDemandGenerator
 
         :param Dict[str, float] rates: A dictionary mapping route IDs to the
@@ -194,14 +195,18 @@ class RandomDemandGenerator(DemandGenerator):
             the sumo simulation
         """
         self.time_step_length = time_step_length
+        self.depart_speed = depart_speed
+        self.control_type = control_type
 
         # convert rates from vehicles per minute to a probability of a spawn event occurring at each time step
         self.spawn_probabilities = {route: rate * self.time_step_length / 60 for route, rate in rates.items()}
         self.current_id = 0
 
     def step(self) -> List[NewVehicleParams]:
-        return [NewVehicleParams(self.get_next_id(), route, depart_speed=10) for route, prob in
-                self.spawn_probabilities.items() if random() <= prob]
+        return [
+            NewVehicleParams(self.get_next_id(), route, depart_speed=self.depart_speed, control_type=self.control_type)
+            for route, prob in self.spawn_probabilities.items() if random() <= prob
+        ]
 
     def get_next_id(self) -> str:
         result = self.current_id
