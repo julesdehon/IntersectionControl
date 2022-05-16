@@ -31,6 +31,44 @@ Similarly, the algorithms implement a uniform interface (all of their behaviour 
 function), and so a number of algorithms could be run on the same environment in the same traffic conditions, and their
 performance compared.
 
+### Directory/Package Structure
+
+The {mod}`intersection_control` package is split into 4 sub-packages:
+
+{mod}`intersection_control.core` provides the _interfaces_ described here. Specifically, it defines the APIs for 
+{mod}`environment <intersection_control.core.environment>`, {mod}`algorithm
+<intersection_control.core.algorithm>`, {mod}`communication <intersection_control.core.communication>` and 
+{mod}`performance_indication <intersection_control.core.performance_indication>`.
+
+The 3 other packages contain concrete _implementations_ of these interfaces:
+1. {mod}`intersection_control.algorithms` provides concrete _implementations_ of the Algorithm API - namely 
+   Query-based intersection control
+2. {mod}`intersection_control.environments` provides concrete _implementations_ of the Environment API - namely a 
+   {class}`SumoEnvironment <intersection_control.environment.SumoEnvironment>`
+3. {mod}`intersection_control.communication` provides concrete _implementations_ of the Communication API - namely a 
+   {class}`DistanceBasedUnit <intersection_control.communication.DistanceBasedUnit>`
+   
+```
+IntersectionControl
+├── docs  # Documentation images and files
+├── intersection_control  # The main source code package
+│   ├── core  # Defines all interfaces and defines the component structure
+│   │   ├── environment  # Provides an interface for any environment to implement
+│   │   │   ├── environment.py  # Defines the base Environment class
+│   │   │   ├── intersectiont_handler.py  # Defines the base IntersectionHandler class 
+│   │   │   └── vehicle_handler.py  # Defines the base VehicleHandler class
+│   │   ├── algorithm
+│   │   │   ├── vehicle.py  # Defines the base Vehicle class
+│   │   │   └── intersection_manager.py  # Defines the base IntersectionManager class
+│   │   ├── communication.py  # Provides an interface for communication - V2V or V2I is possible. Specifically, defines the base MessagingUnit class
+│   │   └── performance_indication.py  # Defines the base PerformanceIndicator class (Not yet implemented)
+│   ├── algorithms  # A collection of intersection control algorithm implementations (for now only QBIM). These are implementations of core.Vehicle and core.IntersectionManager
+│   ├── environments  # A collection of environment implementations (for now only SUMO). These are implementations of core.Environment
+│   └── communication  # A collection of communication implementations (for now only DistanceBasedUnit). These are implementations of core.MessagingUnit
+├── test  # unit tests for various components
+└── misc  # Miscellaneous stand-alone scripts and experiments
+```
+
 ## Environment
 
 The [Environment API](../api/environment.md) is defined in {mod}`intersection_control.core.environment` and consists of
