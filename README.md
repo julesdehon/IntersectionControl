@@ -5,7 +5,8 @@
 
 An environment-agnostic framework for implementing and comparing intersection control algorithms
 
-![Algorithm Environment Interaction](docs/source/image/flowcharts/algo-env-relationship.png)
+<img alt="Algorithm Environment Interaction" src="docs/source/image/flowcharts/algo-env-relationship.png" 
+width="300px"/>
 
 ## Getting Started
 
