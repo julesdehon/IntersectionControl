@@ -67,6 +67,7 @@ for _ in range(STEP_COUNT):
 When run, this should result in a simulation that looks something like this:
 ![QBIM Simulation](../image/qbim-sim.gif)
 
+(implementing_algorithm)=
 ## Implementing an intersection control algorithm
 
 This is done by creating a new subclass of {class}`intersection_control.core.algorithm.Vehicle`
@@ -115,6 +116,7 @@ which will determine its behaviour at each simulation step.
 Unsurprisingly, this algorithm leads to lots of crashes:
 ![Stupid Simulation](../image/stupid-sim.gif)
 
+(implementing_environment)=
 ## Implementing an intersection environment
 
 Implementing your own intersection environment is much more involved that implementing a control algorithm. To do this,
