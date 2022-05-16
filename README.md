@@ -3,48 +3,90 @@
 [![test](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml/badge.svg)](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml)
 [![Documentation Status](https://readthedocs.org/projects/intersectioncontrol/badge/?version=latest)](https://intersectioncontrol.readthedocs.io/en/latest/?badge=latest)
 
-An environment-agnostic framework for comparing intersection control algorithms
+An environment-agnostic framework for implementing and comparing intersection control algorithms
+
+![Algorithm Environment Interaction](docs/source/image/flowcharts/algo-env-relationship.png)
 
 ## Getting Started
 
 ### Installation
 
-Clone the repository:
+```shell
+$ pip install intersection-control
+```
 
-`git clone git@github.com:julesdehon/IntersectionControl.git`
+Refer to the [documentation](https://intersectioncontrol.readthedocs.io/en/latest/usage/installation.html) for all
+installation options
 
-`cd IntersectionControl`
+### Usage
 
-It is recommended to create a new Anaconda environment to work in this project. This project was written using python
-3.8. Other versions have not been tested:
+For a more detailed description of various use-cases, please refer to the
+[documentation](https://intersectioncontrol.readthedocs.io/en/latest/usage/quickstart.html).
 
-`conda create --name <environment-name> python=3.8`
+To run a simple experiment using the QBIM algorithm and SumoEnvironment:
 
-`conda activate <environment-name>`
+Import the desired algorithm/environment:
 
-Then install the dependencies:
+```python
+from intersection_control.environments.sumo import SumoEnvironment, RandomDemandGenerator
+from intersection_control.algorithms.qb_im import QBIMIntersectionManager, QBIMVehicle
+```
 
-`pip install -r requirements.txt`
+Instantiate the environment:
 
-#### Sumo
+```{note}
+The RandomDemandGenerator here is used to programmatically add vehicles to specifically to the Sumo environment. 
+Alternatively, Sumo based [demand generation](https://sumo.dlr.de/docs/Demand/Introduction_to_demand_modelling_in_SUMO.html)
+could be used
+```
 
-In order to be able to use the Sumo simulation environment, you must have Sumo installed. The installation instructions
-for Sumo can be found [here](https://sumo.dlr.de/docs/Installing/index.html).
+```python
+demand_generator = RandomDemandGenerator({
+    "NE": 2, "NS": 2, "NW": 2, "EN": 2, "ES": 2, "EW": 2,
+    "SN": 2, "SE": 2, "SW": 2, "WN": 2, "WE": 2, "WS": 2
+}, 0.05)
+env = SumoEnvironment("path/to/intersection.sumocfg",
+                      demand_generator=demand_generator, time_step=0.05, gui=True)
+```
 
-#### Checking everything works
+Instantiate the vehicles and intersection managers:
 
-You can make sure everything was installed correctly by running `./main.py` or `python main.py` which start up an
-experiment using the Sumo environment, and the QBIM intersection control algorithm.
+```python
+intersection_managers = {QBIMIntersectionManager(intersection_id, env, 10, 0.05) for intersection_id in
+                         env.intersections.get_ids()}  # In this Sumo network there is only one intersection
+vehicles = {QBIMVehicle(vehicle_id, env, communication_range=75) for vehicle_id in env.vehicles.get_ids()}
+```
 
-Note that in its current state, the QBIM implementation has some bugs so the simulation may crash after some time.
+Run the main loop:
+
+```python
+STEP_COUNT = 360000  # 1 hour
+for _ in range(STEP_COUNT):
+    env.step()
+    removed_vehicles = {v for v in vehicles if v.get_id() in env.get_removed_vehicles()}
+    for v in removed_vehicles:
+        v.destroy()
+    new_vehicles = {QBIMVehicle(vehicle_id, env, communication_range=75)
+                    for vehicle_id in env.get_added_vehicles()}
+    vehicles = (vehicles - removed_vehicles).union(new_vehicles)
+    for vehicle in vehicles:
+        vehicle.step()
+    for intersection_manager in intersection_managers:
+        intersection_manager.step()
+```
+
+This simple example is available in `misc/main.py`:
+
+![QBIM Sumo Experiment](docs/source/image/qbim-sim.gif)
 
 ### Exploring the code
 
-A more detailed and high-level explanation of the various components is being written and will be referred to here.
+For a full description of the code's structure please refer to
+the [documentation](https://intersectioncontrol.readthedocs.io/en/latest/overview/overview.html)
 
 The directory structure is as follows:
 
-```python
+```
 IntersectionControl
 ├── docs  # Documentation images and files
 ├── intersection_control  # The main source code package
@@ -53,13 +95,14 @@ IntersectionControl
 │   │   │   ├── environment.py  # Defines the base Environment class
 │   │   │   ├── intersectiont_handler.py  # Defines the base IntersectionHandler class 
 │   │   │   └── vehicle_handler.py  # Defines the base VehicleHandler class
+│   │   ├── algorithm
+│   │   │   ├── vehicle.py  # Defines the base Vehicle class
+│   │   │   └── intersection_manager.py  # Defines the base IntersectionManager class
 │   │   ├── communication.py  # Provides an interface for communication - V2V or V2I is possible. Specifically, defines the base MessagingUnit class
-│   │   ├── intersection_manager.py  # Defines the base IntersectionManager class
-│   │   ├── performance_indicator.py  # Defines the base PerformanceIndicator class (Not yet implemented)
-│   │   └── vehicle.py  # Defines the base Vehicle class
+│   │   └── performance_indication.py  # Defines the base PerformanceIndicator class (Not yet implemented)
 │   ├── algorithms  # A collection of intersection control algorithm implementations (for now only QBIM). These are implementations of core.Vehicle and core.IntersectionManager
 │   ├── environments  # A collection of environment implementations (for now only SUMO). These are implementations of core.Environment
-│   ├── communication  # A collection of communication implementations (for now only DistanceBasedUnit). These are implementations of core.MessagingUnit
-│   └── test  # unit tests for various components
-└── main.py  # Main script to run an experiment - for now simply runs the QBIM algorithm in the SUMO environment
+│   └── communication  # A collection of communication implementations (for now only DistanceBasedUnit). These are implementations of core.MessagingUnit
+├── test  # unit tests for various components
+└── misc  # Miscellaneous stand-alone scripts and experiments
 ```
