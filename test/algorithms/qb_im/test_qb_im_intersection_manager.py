@@ -14,17 +14,18 @@ from intersection_control.core.communication import Message
 from intersection_control.algorithms.qb_im.qb_im_intersection_manager import Intersection, InternalVehicle, \
     QBIMIntersectionManager
 from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType
+from intersection_control.environments.sumo.sumo_intersection_handler import PointBasedTrajectory
 
 
 class TestIntersection(unittest.TestCase):
     def setUp(self) -> None:
         trajectories = {
-            "SN": Trajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
-            "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
-            "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
-            "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))]),
-            "WN": Trajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)),
-                                  np.array((6., 12.)), np.array((10., 30.))])
+            "SN": PointBasedTrajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
+            "NS": PointBasedTrajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
+            "EW": PointBasedTrajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
+            "WE": PointBasedTrajectory(10, [np.array((-30., -10.)), np.array((30., -10.))]),
+            "WN": PointBasedTrajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)),
+                                            np.array((6., 12.)), np.array((10., 30.))])
         }
         self.intersection = Intersection(60, 60, 20, trajectories)
 
@@ -163,10 +164,10 @@ class FakeIntersectionHandler(IntersectionHandler):
 
     def get_trajectories(self, intersection_id: str) -> Dict[str, Trajectory]:
         return {
-            "SN": Trajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
-            "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
-            "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
-            "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))])
+            "SN": PointBasedTrajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
+            "NS": PointBasedTrajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
+            "EW": PointBasedTrajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
+            "WE": PointBasedTrajectory(10, [np.array((-30., -10.)), np.array((30., -10.))])
         }
 
 
