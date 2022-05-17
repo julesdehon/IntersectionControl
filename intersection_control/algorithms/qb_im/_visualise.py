@@ -6,11 +6,11 @@ import matplotlib.patches as patches
 import matplotlib.transforms as transforms
 
 from intersection_control.algorithms.qb_im.qb_im_intersection_manager import Intersection, InternalVehicle
-from intersection_control.core.environment import Trajectory
+from intersection_control.environments.sumo.sumo_intersection_handler import PointBasedTrajectory
 
 
 def draw(intersection: Intersection, vehicle: InternalVehicle):
-    def animate(_):
+    def animate(i):
         if not vehicle.is_in_intersection():
             return
         for p in list(ax.patches):
@@ -20,10 +20,8 @@ def draw(intersection: Intersection, vehicle: InternalVehicle):
         y -= vehicle.length / 2
         car = patches.Rectangle((x, y), vehicle.width, vehicle.length, linewidth=1, edgecolor='r',
                                 facecolor='none', zorder=5)
-        vehicle_direction = vehicle.get_direction_vector()
-        angle = np.arctan2(vehicle_direction[1], vehicle_direction[0])
         t = transforms.Affine2D().rotate_around(vehicle.position[0], vehicle.position[1],
-                                                angle - math.radians(90)) + ax.transData
+                                                vehicle.angle + math.radians(90)) + ax.transData
         car.set_transform(t)
 
         ax.add_patch(car)
@@ -67,14 +65,14 @@ def color_tile(ax, tile, intersection):
 
 def main():
     trajectories = {
-        "SN": Trajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
-        "NS": Trajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
-        "EW": Trajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
-        "WE": Trajectory(10, [np.array((-30., -10.)), np.array((30., -10.))]),
-        "WN": Trajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)),
-                              np.array((6., 12.)), np.array((10., 30.))])
+        "SN": PointBasedTrajectory(10, [np.array((10., -30.)), np.array((10., 30.))]),
+        "NS": PointBasedTrajectory(10, [np.array((-10., 30.)), np.array((-10., -30.))]),
+        "EW": PointBasedTrajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
+        "WE": PointBasedTrajectory(10, [np.array((-30., -10.)), np.array((30., -10.))]),
+        "WN": PointBasedTrajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)),
+                                        np.array((6., 12.)), np.array((10., 30.))])
     }
-    intersection = Intersection(60, 60, 10, trajectories)
+    intersection = Intersection(60, 60, 50, trajectories)
     vehicle = InternalVehicle(10,  # velocity
                               5,  # length
                               2,  # width

@@ -1,19 +1,29 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import List, Dict, Tuple
-import numpy as np
 
 
-@dataclass
-class Trajectory:
+class Trajectory(ABC):
     """Class to represent a trajectory through an intersection
 
-    A trajectory is characterised by a speed limit, and a numpy array of
-    consecutive x,y points along the trajectory. For example,
-    [(-10,0), (10,0)] is a straight-line horizontal trajectory through the
-    intersection"""
-    speed_limit: float
-    points: List[np.ndarray]
+    A trajectory has a speed limit, and can be moved along. Different environments
+    may implement trajectories in different ways, and this API should cater to
+    most all of them
+    """
+    @property
+    @abstractmethod
+    def speed_limit(self) -> float:
+        raise NotImplementedError
+
+    @abstractmethod
+    def point_at(self, distance: float) -> Tuple[Tuple[float, float], float]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_length(self) -> float:
+        raise NotImplementedError
+
+    def get_starting_position(self) -> Tuple[Tuple[float, float], float]:
+        return self.point_at(0)
 
 
 class IntersectionHandler(ABC):

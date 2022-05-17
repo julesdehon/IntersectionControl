@@ -5,6 +5,53 @@ import sumolib
 from intersection_control.core.environment import IntersectionHandler, Trajectory
 
 
+class PointBasedTrajectory(Trajectory):
+    def __init__(self, speed_limit: float, points: List[np.ndarray]):
+        self._speed_limit = speed_limit
+        self.points = points
+        self.length = None
+
+    @property
+    def speed_limit(self) -> float:
+        return self._speed_limit
+
+    def point_at(self, distance: float) -> Tuple[Tuple[float, float], float]:
+        if distance < 0:
+            raise ValueError("Cannot find point at negative distance")
+
+        (x, y), alpha, _ = self._point_at(distance)
+        return (x, y), alpha
+
+    def _point_at(self, distance: float) -> Tuple[Tuple[float, float], float, float]:
+        """Same as point_at but also returns the distance moved
+        """
+        curr_trajectory_slice = 0
+        curr = self.points[0].copy()
+        total_distance_moved = 0
+
+        while total_distance_moved < distance and curr_trajectory_slice < len(self.points) - 1:
+            vector_to_waypoint = self.points[curr_trajectory_slice + 1] - self.points[curr_trajectory_slice]
+            dist_to_waypoint = np.linalg.norm(vector_to_waypoint)
+            dist_moved = min(distance - total_distance_moved, dist_to_waypoint)
+            curr += vector_to_waypoint * (dist_moved / dist_to_waypoint)
+            total_distance_moved += dist_moved
+            if total_distance_moved != distance:
+                curr_trajectory_slice += 1
+
+        if curr_trajectory_slice == len(self.points) - 1:
+            vector = self.points[curr_trajectory_slice] - self.points[curr_trajectory_slice - 1]
+        else:
+            vector = self.points[curr_trajectory_slice + 1] - self.points[curr_trajectory_slice]
+        alpha = np.arctan2(vector[1], vector[0])
+
+        return (curr[0], curr[1]), alpha, total_distance_moved
+
+    def get_length(self):
+        if self.length is None:
+            _, _, self.length = self._point_at(np.inf)
+        return self.length
+
+
 class SumoIntersectionHandler(IntersectionHandler):
     def __init__(self, net_file: str, route_file: str):
         self.net = sumolib.net.readNet(net_file, withInternal=True)
@@ -19,7 +66,7 @@ class SumoIntersectionHandler(IntersectionHandler):
             intersection.getID():
                 {
                     self._get_route_through_edge(edge):
-                        Trajectory(edge.getSpeed(), [np.array(point) for point in edge.getShape()])
+                        PointBasedTrajectory(edge.getSpeed(), [np.array(point) for point in edge.getShape()])
                     for edge in [self.net.getLane(laneId) for laneId in intersection.getInternal()]
                 }
             for intersection in self.net.getNodes() if intersection.getType() == "traffic_light"

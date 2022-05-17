@@ -116,33 +116,17 @@ class InternalVehicle:
         self.length = length
         self.width = width
         self.intersection = intersection
-        self.trajectory = np.copy(intersection.trajectories[trajectory].points)
-        self.curr_trajectory_slice = 0
-        self.position = np.copy(self.trajectory[self.curr_trajectory_slice])
+        self.trajectory = intersection.trajectories[trajectory]
+        self.position, self.angle = self.trajectory.get_starting_position()
+        self.distance_moved = 0
 
     def is_in_intersection(self):
-        intersection_shape = np.array([self.intersection.width, self.intersection.height])
-        return ((-intersection_shape / 2 <= self.position) & (
-                self.position <= intersection_shape / 2)).all() and self.curr_trajectory_slice < len(
-            self.trajectory) - 1
+        return self.distance_moved < self.trajectory.get_length()
 
     def update(self, dt):
-        distance_moved = self.velocity * dt
-        self.move_along_trajectory(distance_moved)
+        self.distance_moved = self.distance_moved + self.velocity * dt
+        self.position, self.angle = self.trajectory.point_at(self.distance_moved)
         self.velocity += self.acceleration * dt
-
-    def move_along_trajectory(self, distance: float):
-        while distance > 0 and self.curr_trajectory_slice < len(self.trajectory) - 1:
-            vector_to_waypoint = self.get_direction_vector()
-            dist_to_waypoint = np.sqrt(np.sum(vector_to_waypoint ** 2))
-            dist_moved = min(distance, dist_to_waypoint)
-            self.position += vector_to_waypoint * (dist_moved / dist_to_waypoint)
-            distance -= dist_moved
-            if (self.get_direction_vector() == [0, 0]).all():
-                self.curr_trajectory_slice += 1
-
-    def get_direction_vector(self):
-        return self.trajectory[self.curr_trajectory_slice + 1] - self.position
 
 
 class Intersection:
@@ -175,7 +159,7 @@ class Intersection:
     def get_tiles_for_vehicle(self, vehicle: InternalVehicle,
                               safety_buffer: Tuple[float, float]) -> FrozenSet[Tuple[int, int]]:
         # normalised perpendicular vectors
-        v1 = vehicle.get_direction_vector() / np.linalg.norm(vehicle.get_direction_vector())
+        v1 = np.array([np.cos(vehicle.angle), np.sin(vehicle.angle)])
         v2 = np.array([-v1[1], v1[0]])
 
         v1 *= (vehicle.length + safety_buffer[1]) / 2
