@@ -50,7 +50,8 @@ class SumoVehicleHandler(VehicleHandler):
         return traci.vehicle.getPosition(vehicle_id)
 
     def get_direction(self, vehicle_id) -> float:
-        return (math.radians(traci.vehicle.getAngle(vehicle_id)) - math.pi / 2) % (2 * math.pi)  # Transform as required
+        # Transform as required
+        return math.pi - (math.radians(traci.vehicle.getAngle(vehicle_id)) + math.pi / 2) % (2 * math.pi)
 
     def set_desired_speed(self, vehicle_id: str, to: float):
         traci.vehicle.setSpeed(vehicle_id, to)

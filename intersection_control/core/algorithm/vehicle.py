@@ -106,13 +106,13 @@ class Vehicle(ABC):
         The positive horizontal axis is taken to have a direction of 0, and the
         angle increases as the vehicle rotates clockwise like so::
 
-                 3pi/2
+                  pi/2
                    ^
                    |
             pi <---+---> 0
                    |
                    v
-                  pi/2
+                -pi/2
 
         :return: The direction of the vehicle in radians
         """
@@ -139,5 +139,7 @@ class Vehicle(ABC):
 
         This will usually be determined by the speed limit of the road the vehicle
         is currently on
+
+        :return: The speed limit
         """
         return self.environment.vehicles.get_speed_limit(self.vehicle_id)

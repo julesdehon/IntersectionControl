@@ -120,13 +120,13 @@ class VehicleHandler(ABC):
         The positive horizontal axis is taken to have a direction of 0, and the
         angle increases as the vehicle rotates clockwise like so::
 
-                 3pi/2
+                  pi/2
                    ^
                    |
             pi <---+---> 0
                    |
                    v
-                  pi/2
+                -pi/2
 
         :param str vehicle_id: The ID of the vehicle we want to get the heading of
         :return: The direction of the vehicle in radians
