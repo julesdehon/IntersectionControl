@@ -152,15 +152,6 @@ class VehicleHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def set_acceleration(self, vehicle_id: str, to: float):
-        """Sets the given vehicle's acceleration
-
-        :param str vehicle_id: The ID of the vehicle we want to set the acceleration of
-        :param float to: The desired acceleration in m/s^2
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def get_max_acceleration(self, vehicle_id: str) -> float:
         """Returns the maximum acceleration possibility of the given vehicle
 
