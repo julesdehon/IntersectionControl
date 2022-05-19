@@ -1,7 +1,8 @@
 class VehicleState:
-    APPROACHING = 0
-    IN_INTERSECTION = 1
-    DEFAULT = 2
+    APPROACHING_WITHOUT_RESERVATION = 0
+    APPROACHING_WITH_RESERVATION = 1
+    IN_INTERSECTION = 2
+    DEFAULT = 3
 
 
 class VehicleMessageType:

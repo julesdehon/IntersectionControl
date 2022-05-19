@@ -32,67 +32,51 @@ class QBIMVehicle(Vehicle):
         if self.state == VehicleState.DEFAULT:
             self.approaching_im = self.approaching()
             if self.approaching_im is not None and self.approaching_im in self.messaging_unit.discover():
-                self.state = VehicleState.APPROACHING
-            else:
-                return
+                self.transition_to_approaching_without_reservation()
+        elif self.state == VehicleState.APPROACHING_WITHOUT_RESERVATION:
+            pass  # This transition occurs upon receiving a confirmation message
+        elif self.state == VehicleState.APPROACHING_WITH_RESERVATION:
+            if self.in_intersection():
+                self.transition_to_in_intersection()
+        elif self.state == VehicleState.IN_INTERSECTION:
+            if self.departing():
+                self.transition_to_default()
 
-        # If we are approaching, and do not yet have a reservation, send a reservation request to the IM
-        if self.state == VehicleState.APPROACHING and self.reservation is None \
-                and self.environment.get_current_time() >= self.timeout:
-            logger.debug(f"[{self.get_id()}] Sending reservation request for time {self.approximate_arrival_time()}"
-                         f" and velocity {self.approximate_arrival_velocity()}")
-            self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
-                "type": VehicleMessageType.REQUEST,
-                "vehicle_id": self.get_id(),
-                "arrival_time": self.approximate_arrival_time(),
-                "arrival_lane": self.get_trajectory(),
-                "arrival_velocity": self.approximate_arrival_velocity(),
-                "vehicle_length": self.get_length(),
-                "vehicle_width": self.get_width()
-            }))
-        elif self.state == VehicleState.APPROACHING and self.reservation is not None \
-                and not self.in_intersection() \
-                and self.environment.get_current_time() >= self.timeout \
-                and (self.approximate_arrival_time() < self.reservation.early_error
-                     or self.approximate_arrival_time() > self.reservation.late_error):
-            logger.debug(f"[{self.get_id()}] Changing reservation request. Old reservation time: "
-                         f"{self.reservation.arrival_time}, new approximate arrival: {self.approximate_arrival_time()}")
-            self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
-                "type": VehicleMessageType.CHANGE_REQUEST,
-                "vehicle_id": self.get_id(),
-                "arrival_time": self.approximate_arrival_time(),
-                "arrival_lane": self.get_trajectory(),
-                "arrival_velocity": self.approximate_arrival_velocity(),
-                "vehicle_length": self.get_length(),
-                "vehicle_width": self.get_width(),
-                "reservation_id": self.reservation.reservation_id
-            }))
-            self.reservation = None
+        self.act()
 
-        # On arriving at the intersection, produce a log message and update vehicle state to IN_INTERSECTION
-        if self.state == VehicleState.APPROACHING and self.in_intersection():
-            logger.debug(f"[{self.get_id()}] Arrived at intersection. Reservation time: {self.reservation.arrival_time}"
-                         f" Actual time: {self.environment.get_current_time()}. Reservation velocity: "
-                         f"{self.reservation.arrival_velocity} Actual velocity: {self.get_speed()}.")
-            self.state = VehicleState.IN_INTERSECTION
+    def transition_to_approaching_without_reservation(self):
+        self.state = VehicleState.APPROACHING_WITHOUT_RESERVATION
 
-        # On departing the intersection, send a DONE message to the IM and update vehicle state to DEFAULT
-        if self.state == VehicleState.IN_INTERSECTION and self.departing():
-            logger.debug(f"[{self.get_id()}] Leaving the intersection")
-            self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
-                "type": VehicleMessageType.DONE
-            }))
-            self.reservation = None
-            self.target_speed = None
-            self.approaching_im = None
-            self.set_desired_speed(to=-1)
-            self.state = VehicleState.DEFAULT
+    def transition_to_approaching_with_reservation(self):
+        self.state = VehicleState.APPROACHING_WITH_RESERVATION
+
+    def transition_to_in_intersection(self):
+        assert self.state == VehicleState.APPROACHING_WITH_RESERVATION
+        logger.debug(f"[{self.get_id()}] Arrived at intersection. Reservation time: {self.reservation.arrival_time}"
+                     f" Actual time: {self.environment.get_current_time()}. Reservation velocity: "
+                     f"{self.reservation.arrival_velocity} Actual velocity: {self.get_speed()}.")
+        self.state = VehicleState.IN_INTERSECTION
+
+    def transition_to_default(self):
+        assert self.state == VehicleState.IN_INTERSECTION
+        logger.debug(f"[{self.get_id()}] Leaving the intersection")
+        self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
+            "type": VehicleMessageType.DONE
+        }))
+        self.reservation = None
+        self.target_speed = None
+        self.approaching_im = None
+        self.set_desired_speed(to=-1)
+        self.state = VehicleState.DEFAULT
 
     def handle_message(self, message: Message):
         if message.contents["type"] == IMMessageType.CONFIRM:
+            assert self.state == VehicleState.APPROACHING_WITHOUT_RESERVATION
             logger.debug(f"{self.get_id()} Received confirmation from IM")
             self.reservation = Reservation(message)
+            self.transition_to_approaching_with_reservation()
         elif message.contents["type"] == IMMessageType.REJECT:
+            assert self.state == VehicleState.APPROACHING_WITHOUT_RESERVATION
             logger.debug(f"{self.get_id()} Received rejection from IM")
             self.timeout = message.contents["timeout"]
             self.target_speed = self.get_speed() * 0.8
@@ -113,6 +97,43 @@ class QBIMVehicle(Vehicle):
             self.get_trajectory()].speed_limit
         target_speed = self.target_speed if self.target_speed is not None else turn_speed_limit
         return min(self.get_speed(), turn_speed_limit, target_speed)
+
+    def act(self):
+        # If we are approaching, and do not yet have a reservation, send a reservation request to the IM
+        if self.state == VehicleState.APPROACHING_WITHOUT_RESERVATION:
+            if self.environment.get_current_time() >= self.timeout:
+                logger.debug(f"[{self.get_id()}] Sending reservation request for time {self.approximate_arrival_time()}"
+                             f" and velocity {self.approximate_arrival_velocity()}")
+                self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
+                    "type": VehicleMessageType.REQUEST,
+                    "vehicle_id": self.get_id(),
+                    "arrival_time": self.approximate_arrival_time(),
+                    "arrival_lane": self.get_trajectory(),
+                    "arrival_velocity": self.approximate_arrival_velocity(),
+                    "vehicle_length": self.get_length(),
+                    "vehicle_width": self.get_width()
+                }))
+        elif self.state == VehicleState.APPROACHING_WITH_RESERVATION:
+            if self.environment.get_current_time() >= self.timeout and self.reservation_needs_changing():
+                logger.debug(f"[{self.get_id()}] Changing reservation request. Old reservation time: "
+                             f"{self.reservation.arrival_time}, new approximate arrival: "
+                             f"{self.approximate_arrival_time()}")
+                self.messaging_unit.send(self.approaching_im, Message(self.messaging_unit.address, {
+                    "type": VehicleMessageType.CHANGE_REQUEST,
+                    "vehicle_id": self.get_id(),
+                    "arrival_time": self.approximate_arrival_time(),
+                    "arrival_lane": self.get_trajectory(),
+                    "arrival_velocity": self.approximate_arrival_velocity(),
+                    "vehicle_length": self.get_length(),
+                    "vehicle_width": self.get_width(),
+                    "reservation_id": self.reservation.reservation_id
+                }))
+                self.reservation = None
+                self.transition_to_approaching_without_reservation()
+
+    def reservation_needs_changing(self):
+        return self.approximate_arrival_time() < self.reservation.early_error \
+               or self.approximate_arrival_time() > self.reservation.late_error
 
 
 class Reservation:
