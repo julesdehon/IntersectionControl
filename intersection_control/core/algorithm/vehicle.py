@@ -150,3 +150,24 @@ class Vehicle(ABC):
         :return: The acceleration of the vehicle in m/s^2
         """
         return self.environment.vehicles.get_acceleration(self.vehicle_id)
+
+    def set_acceleration(self, to: float):
+        """Sets the vehicle's acceleration
+
+        :param float to: The desired acceleration in m/s^2
+        """
+        self.environment.vehicles.set_acceleration(self.vehicle_id, to)
+
+    def get_max_acceleration(self) -> float:
+        """Returns the maximum acceleration possibility of the vehicle
+
+        :return: The maximum acceleration in m/s^2
+        """
+        return self.environment.vehicles.get_max_acceleration(self.vehicle_id)
+
+    def get_max_deceleration(self) -> float:
+        """Returns the maximum deceleration possibility of the given vehicle
+
+        :return: The maximum deceleration in m/s^2
+        """
+        return self.environment.vehicles.get_max_deceleration(self.vehicle_id)

@@ -144,9 +144,36 @@ class VehicleHandler(ABC):
 
     @abstractmethod
     def get_acceleration(self, vehicle_id: str) -> float:
-        """Returns the current acceleration of the current vehicle
+        """Returns the current acceleration of the given vehicle
 
         :param str vehicle_id: The ID of the vehicle we want the acceleration of
         :return: The acceleration of the vehicle in m/s^2
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_acceleration(self, vehicle_id: str, to: float):
+        """Sets the given vehicle's acceleration
+
+        :param str vehicle_id: The ID of the vehicle we want to set the acceleration of
+        :param float to: The desired acceleration in m/s^2
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_max_acceleration(self, vehicle_id: str) -> float:
+        """Returns the maximum acceleration possibility of the given vehicle
+
+        :param str vehicle_id: The ID of the vehicle we want the maximum acceleration of
+        :return: The maximum acceleration of the vehicle in m/s^2
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_max_deceleration(self, vehicle_id: str) -> float:
+        """Returns the maximum deceleration possibility of the given vehicle
+
+        :param str vehicle_id: The ID of the vehicle we want the maximum deceleration of
+        :return: The maximum deceleration of the vehicle in m/s^2
         """
         raise NotImplementedError

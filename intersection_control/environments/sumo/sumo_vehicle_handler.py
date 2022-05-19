@@ -62,6 +62,15 @@ class SumoVehicleHandler(VehicleHandler):
     def get_acceleration(self, vehicle_id: str) -> float:
         return traci.vehicle.getAcceleration(vehicle_id)
 
+    def set_acceleration(self, vehicle_id: str, to: float):
+        traci.vehicle.setAccel(vehicle_id, to)
+
+    def get_max_acceleration(self, vehicle_id: str) -> float:
+        return traci.vehicle.getAccel(vehicle_id)
+
+    def get_max_deceleration(self, vehicle_id: str) -> float:
+        return traci.vehicle.getDecel(vehicle_id)
+
     def _get_intersections_entered_by_lanes(self) -> Dict[str, str]:
         intersections = [node for node in self.net.getNodes() if node.getType() == "traffic_light"]
         result = {}
