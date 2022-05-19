@@ -26,6 +26,8 @@ class VehicleMessageType:
                                  it arrives at the intersection.
     * vehicle_length           — the length of the vehicle.
     * vehicle_width            — the width of the vehicle.
+    * maximum_acceleration     — the maximum rate at which the vehicle can accelerate
+    * maximum_velocity         — the maximum velocity at which the vehicle can travel
     """
 
     CHANGE_REQUEST = 1
@@ -93,12 +95,7 @@ class IMMessageType:
     * arrival_velocity — the velocity at which the vehicle is expected to be traveling
                          when it arrives at the intersection. A negative number signifies that any velocity
                          is acceptable.
-    * accelerations    — a run-length encoded description of the expected acceleration of
-                         the vehicle as it travels through the intersection. Here, a run-length encoded description is a 
-                         sequence of order pairs of acceleration and duration—starting
-                         with the instant the vehicle enters the intersection, it should maintain each
-                         acceleration for the duration with which it is paired. If the sequence is empty,
-                         any accelerations are acceptable.
+    * accelerate       — whether the vehicle should accelerate through the intersection or not
     """
 
     REJECT = 1

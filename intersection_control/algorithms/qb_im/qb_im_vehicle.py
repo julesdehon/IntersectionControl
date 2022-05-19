@@ -79,7 +79,7 @@ class QBIMVehicle(Vehicle):
             assert self.state == VehicleState.APPROACHING_WITHOUT_RESERVATION
             logger.debug(f"{self.get_id()} Received rejection from IM")
             self.timeout = message.contents["timeout"]
-            self.target_speed = self.get_speed() * 0.8
+            self.target_speed = self.get_speed() * 0.9
             self.set_desired_speed(to=self.target_speed)
         else:
             logger.warning(f"[{self.get_id()}] Received unknown message type from {message.sender}. Ignoring.")
@@ -110,6 +110,8 @@ class QBIMVehicle(Vehicle):
                     "arrival_time": self.approximate_arrival_time(),
                     "arrival_lane": self.get_trajectory(),
                     "arrival_velocity": self.approximate_arrival_velocity(),
+                    "maximum_acceleration": self.get_max_acceleration(),
+                    "maximum_velocity": self.get_speed_limit(),
                     "vehicle_length": self.get_length(),
                     "vehicle_width": self.get_width()
                 }))
@@ -124,12 +126,17 @@ class QBIMVehicle(Vehicle):
                     "arrival_time": self.approximate_arrival_time(),
                     "arrival_lane": self.get_trajectory(),
                     "arrival_velocity": self.approximate_arrival_velocity(),
+                    "maximum_acceleration": self.get_max_acceleration(),
+                    "maximum_velocity": self.get_speed_limit(),
                     "vehicle_length": self.get_length(),
                     "vehicle_width": self.get_width(),
                     "reservation_id": self.reservation.reservation_id
                 }))
                 self.reservation = None
                 self.transition_to_approaching_without_reservation()
+        elif self.state == VehicleState.IN_INTERSECTION:
+            if self.reservation.accelerate:
+                self.set_desired_speed(self.get_speed_limit())
 
     def reservation_needs_changing(self):
         return self.approximate_arrival_time() < self.reservation.early_error \
@@ -143,3 +150,4 @@ class Reservation:
         self.arrival_velocity = confirm_message.contents["arrival_velocity"]
         self.early_error = confirm_message.contents["early_error"]
         self.late_error = confirm_message.contents["late_error"]
+        self.accelerate = confirm_message.contents["accelerate"]

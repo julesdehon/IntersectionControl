@@ -13,6 +13,7 @@ import math
 logger = logging.getLogger(__name__)
 
 TIME_BUFFER = 1
+MUST_ACCELERATE_THRESHOLD = 2  # Vehicles travelling slower than this threshold must accelerate through the intersection
 
 
 class QBIMIntersectionManager(IntersectionManager):
@@ -67,44 +68,63 @@ class QBIMIntersectionManager(IntersectionManager):
         arrival_time = message.contents["arrival_time"]
         self.timeouts[message.sender] = curr_time + min(0.5, (arrival_time - curr_time) / 2)
 
-        tile_times = set()
-        time = self.discretise_time(arrival_time)
-        temp_vehicle = InternalVehicle(message.contents["arrival_velocity"],
-                                       message.contents["vehicle_length"],
-                                       message.contents["vehicle_width"],
-                                       message.contents["arrival_lane"],
-                                       self.intersection)
+        for acceleration in (
+                [True, False] if message.contents["arrival_velocity"] > MUST_ACCELERATE_THRESHOLD else [True]):
+            tile_times = set()
+            time = self.discretise_time(arrival_time)
+            temp_vehicle = InternalVehicle(message.contents["arrival_velocity"],
+                                           message.contents["vehicle_length"],
+                                           message.contents["vehicle_width"],
+                                           message.contents["arrival_lane"],
+                                           self.intersection,
+                                           acceleration=message.contents["maximum_acceleration"] if acceleration else 0)
+            no_collisions = True
+            while temp_vehicle.is_in_intersection():
+                # TODO: Tune safety buffer
+                occupied_tiles = self.intersection.get_tiles_for_vehicle(temp_vehicle, (2, 2))
+                tile_times.add((time, occupied_tiles))
+                for tile in occupied_tiles:
+                    buf = TIME_BUFFER  # TODO: Tune this - the time buffer around which reservation slots are checked
+                    for i in np.arange(-buf, buf, self.time_discretisation):
+                        if (tile, time + i) in self.tiles:
+                            if acceleration:
+                                no_collisions = False
+                                break
+                            else:
+                                logger.debug(f"Rejecting request for {message.sender}: reservation collision")
+                                self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
+                                    "type": IMMessageType.REJECT,
+                                    "timeout": self.timeouts[message.sender]
+                                }))
+                                return
+                    if not no_collisions:
+                        break
+                if not no_collisions:
+                    break
+                time = self.discretise_time(time + self.time_discretisation)  # Make 100% sure it is discretised
+                temp_vehicle.update(self.time_discretisation)
+                if temp_vehicle.velocity >= min(
+                        message.contents["maximum_velocity"], temp_vehicle.trajectory.speed_limit):
+                    temp_vehicle.acceleration = 0
 
-        while temp_vehicle.is_in_intersection():
-            # TODO: Tune safety buffer
-            occupied_tiles = self.intersection.get_tiles_for_vehicle(temp_vehicle, (2, 2))
-            tile_times.add((time, occupied_tiles))
-            for tile in occupied_tiles:
-                buf = TIME_BUFFER  # TODO: Tune this - the time buffer around which reservation slots are checked
-                for i in np.arange(-buf, buf, self.time_discretisation):
-                    if (tile, time + i) in self.tiles:
-                        logger.debug(f"Rejecting request for {message.sender}: reservation collision")
-                        self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
-                            "type": IMMessageType.REJECT,
-                            "timeout": self.timeouts[message.sender]
-                        }))
-                        return
-            time += self.time_discretisation
-            temp_vehicle.update(self.time_discretisation)
+            if not no_collisions:
+                continue
 
-        for (time, tiles) in tile_times:
-            for tile in tiles:
-                self.tiles[(tile, time)] = message.sender
-        self.reservations[message.sender] = tile_times
-        logger.debug(f"Accepting request for {message.sender}")
-        self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
-            "type": IMMessageType.CONFIRM,
-            "reservation_id": message.sender,
-            "arrival_time": arrival_time,
-            "arrival_velocity": message.contents["arrival_velocity"],
-            "early_error": arrival_time - TIME_BUFFER / 2,
-            "late_error": arrival_time + TIME_BUFFER / 2
-        }))
+            for (time, tiles) in tile_times:
+                for tile in tiles:
+                    self.tiles[(tile, time)] = message.sender
+            self.reservations[message.sender] = tile_times
+            logger.debug(f"Accepting request for {message.sender}")
+            self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
+                "type": IMMessageType.CONFIRM,
+                "reservation_id": message.sender,
+                "arrival_time": arrival_time,
+                "arrival_velocity": message.contents["arrival_velocity"],
+                "early_error": arrival_time - TIME_BUFFER / 2,
+                "late_error": arrival_time + TIME_BUFFER / 2,
+                "accelerate": acceleration
+            }))
+            break
 
     def handle_done_message(self, message: Message):
         assert message.contents["type"] == VehicleMessageType.DONE
@@ -121,13 +141,14 @@ class QBIMIntersectionManager(IntersectionManager):
             f = math.floor
         else:
             f = round
-        return self.time_discretisation * f(time / self.time_discretisation)
+        num_decimals = str(self.time_discretisation)[::-1].find(".")
+        return round(self.time_discretisation * f(time / self.time_discretisation), num_decimals)
 
 
 class InternalVehicle:
-    def __init__(self, velocity, length, width, trajectory, intersection: Intersection):
+    def __init__(self, velocity, length, width, trajectory, intersection: Intersection, acceleration=0):
         self.velocity = velocity
-        self.acceleration = 0
+        self.acceleration = acceleration
         self.length = length
         self.width = width
         self.intersection = intersection
