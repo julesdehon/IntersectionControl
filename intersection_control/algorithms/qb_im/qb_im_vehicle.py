@@ -24,10 +24,6 @@ class QBIMVehicle(Vehicle):
         self.messaging_unit.destroy()
 
     def step(self):
-        # Handle all messages
-        for message in self.messaging_unit.receive():
-            self.handle_message(message)
-
         # If we are within the communication range of the IM, update the vehicle state to APPROACHING
         if self.state == VehicleState.DEFAULT:
             self.approaching_im = self.approaching()
@@ -41,6 +37,10 @@ class QBIMVehicle(Vehicle):
         elif self.state == VehicleState.IN_INTERSECTION:
             if self.departing():
                 self.transition_to_default()
+
+        # Handle all messages
+        for message in self.messaging_unit.receive():
+            self.handle_message(message)
 
         self.act()
 
