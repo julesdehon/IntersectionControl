@@ -38,10 +38,15 @@ class QBIMIntersectionManager(IntersectionManager):
             self.handle_request_message(message)
         elif message.contents["type"] == VehicleMessageType.DONE:
             logger.debug(f"Received done message from {message.sender}")
+            self.handle_done_message(message)
         else:
             logger.warning(f"Received unknown message type from {message.sender}. Ignoring.")
 
     def handle_request_message(self, message: Message):
+        assert message.contents["type"] == VehicleMessageType.REQUEST \
+               or message.contents["type"] == VehicleMessageType.CHANGE_REQUEST
+
+        # If it is a change request, delete all knowledge about the request
         if message.contents["type"] == VehicleMessageType.CHANGE_REQUEST:
             old_tile_times = self.reservations[message.sender]
             for (time, tiles) in old_tile_times:
@@ -49,6 +54,7 @@ class QBIMIntersectionManager(IntersectionManager):
                     self.tiles.pop((tile, time))
             self.reservations.pop(message.sender)
 
+        # If the vehicle is still on timeout, reject the request
         curr_time = self.discretise_time(self.environment.get_current_time())
         if message.sender in self.timeouts and self.timeouts[message.sender] > curr_time:
             logger.debug(f"Rejecting request for {message.sender}: timeout not yet served")
@@ -57,6 +63,7 @@ class QBIMIntersectionManager(IntersectionManager):
                 "timeout": self.timeouts[message.sender]
             }))
             return
+
         arrival_time = message.contents["arrival_time"]
         self.timeouts[message.sender] = curr_time + min(0.5, (arrival_time - curr_time) / 2)
 
@@ -98,6 +105,14 @@ class QBIMIntersectionManager(IntersectionManager):
             "early_error": arrival_time - TIME_BUFFER / 2,
             "late_error": arrival_time + TIME_BUFFER / 2
         }))
+
+    def handle_done_message(self, message: Message):
+        assert message.contents["type"] == VehicleMessageType.DONE
+        old_tile_times = self.reservations[message.sender]
+        for (time, tiles) in old_tile_times:
+            for tile in tiles:
+                self.tiles.pop((tile, time))
+        self.reservations.pop(message.sender)
 
     def discretise_time(self, time, direction="nearest"):
         if direction == "ceiling":
