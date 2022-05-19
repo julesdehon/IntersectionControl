@@ -105,7 +105,7 @@ class VehicleHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_position(self, vehicle_id) -> Tuple[float, float]:
+    def get_position(self, vehicle_id: str) -> Tuple[float, float]:
         """Returns the current position of the given vehicle
 
         :param str vehicle_id: The ID of the vehicle we are interested in
@@ -114,7 +114,7 @@ class VehicleHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_direction(self, vehicle_id) -> float:
+    def get_direction(self, vehicle_id: str) -> float:
         """Returns the direction the given vehicle is currently facing in radians
 
         The positive horizontal axis is taken to have a direction of 0, and the
@@ -134,10 +134,19 @@ class VehicleHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_speed_limit(self, vehicle_id) -> float:
+    def get_speed_limit(self, vehicle_id: str) -> float:
         """Returns the maximum speed the given vehicle should be travelling at
 
         This will usually be determined by the speed limit of the road the vehicle
         is currently on
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_acceleration(self, vehicle_id: str) -> float:
+        """Returns the current acceleration of the current vehicle
+
+        :param str vehicle_id: The ID of the vehicle we want the acceleration of
+        :return: The acceleration of the vehicle in m/s^2
         """
         raise NotImplementedError

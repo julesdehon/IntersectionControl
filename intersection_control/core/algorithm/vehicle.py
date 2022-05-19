@@ -143,3 +143,10 @@ class Vehicle(ABC):
         :return: The speed limit
         """
         return self.environment.vehicles.get_speed_limit(self.vehicle_id)
+
+    def get_acceleration(self) -> float:
+        """Returns the current acceleration of the vehicle
+
+        :return: The acceleration of the vehicle in m/s^2
+        """
+        return self.environment.vehicles.get_acceleration(self.vehicle_id)

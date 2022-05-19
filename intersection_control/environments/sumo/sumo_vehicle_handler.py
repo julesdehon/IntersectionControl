@@ -59,6 +59,9 @@ class SumoVehicleHandler(VehicleHandler):
     def get_speed_limit(self, vehicle_id) -> float:
         return traci.vehicle.getAllowedSpeed(vehicle_id)
 
+    def get_acceleration(self, vehicle_id: str) -> float:
+        return traci.vehicle.getAcceleration(vehicle_id)
+
     def _get_intersections_entered_by_lanes(self) -> Dict[str, str]:
         intersections = [node for node in self.net.getNodes() if node.getType() == "traffic_light"]
         result = {}
