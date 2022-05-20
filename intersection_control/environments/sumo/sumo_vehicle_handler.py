@@ -37,7 +37,7 @@ class SumoVehicleHandler(VehicleHandler):
         return traci.vehicle.getLength(vehicle_id)
 
     def get_width(self, vehicle_id: str) -> float:
-        return traci.vehicle.getLength(vehicle_id)
+        return traci.vehicle.getWidth(vehicle_id)
 
     def get_driving_distance(self, vehicle_id: str) -> float:
         road_end_x, road_end_y = self.net.getEdge(traci.vehicle.getRoadID(vehicle_id)).getShape()[-1]

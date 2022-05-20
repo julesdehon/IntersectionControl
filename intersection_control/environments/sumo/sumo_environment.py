@@ -42,7 +42,8 @@ class SumoEnvironment(Environment):
             "--step-length", str(time_step),
             "--collision.check-junctions",
             "--default.speeddev", "0",
-            "--collision.action", "remove"
+            "--collision.action", "remove",
+            "--no-step-log"
         ]
         if not warnings:
             sumo_cmd.append("--no-warnings")
