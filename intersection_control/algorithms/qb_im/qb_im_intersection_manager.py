@@ -12,7 +12,7 @@ import math
 
 logger = logging.getLogger(__name__)
 
-TIME_BUFFER = 1
+TIME_BUFFER = 0.2
 MUST_ACCELERATE_THRESHOLD = 2  # Vehicles travelling slower than this threshold must accelerate through the intersection
 
 
