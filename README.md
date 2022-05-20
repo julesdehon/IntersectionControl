@@ -1,5 +1,8 @@
 # IntersectionControl
 
+> :warning: This repository is under **active development** for my BEng thesis and there is a high chance many APIs 
+> and components will change in the near future
+
 [![test](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml/badge.svg)](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml)
 [![Documentation Status](https://readthedocs.org/projects/intersectioncontrol/badge/?version=latest)](https://intersectioncontrol.readthedocs.io/en/latest/?badge=latest)
 
