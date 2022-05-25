@@ -113,7 +113,7 @@ The [Algorithm API](../api/algorithm.md) is defined in {mod}`intersection_contro
 
 As shown in the diagram, both the {class}`Vehicle <intersection_control.core.algorithm.Vehicle>` and
 {class}`IntersectionManager <intersection_control.core.algorithm.IntersectionManager>` hold a reference to the
-environment and are able to interact with it in order retrieve or modify the state of the environment.
+environment and are able to interact with it in order to retrieve or modify the state of the environment.
 
 The base {class}`Vehicle <intersection_control.core.algorithm.Vehicle>` class already implements some trivial methods,
 such as {meth}`get_speed() <intersection_control.core.algorithm.Vehicle.get_speed>` simply by calling the corresponding
