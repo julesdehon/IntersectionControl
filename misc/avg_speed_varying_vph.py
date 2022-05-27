@@ -11,7 +11,7 @@ VPMs = [1, 2, 3, 4, 5]
 RUNS_PER_VPM = 10
 STEPS_PER_RUN = int((5 * 60) / TIME_STEP)  # 5 minutes
 VEHICLE_FACTORIES = {
-    "stip": lambda vid, env: stip.StipVehicle(vid, env),
+    "stip": lambda vid, env: stip.STIPVehicle(vid, env),
     "qb_im": lambda vid, env: qb_im.QBIMVehicle(vid, env, communication_range=50)
 }
 IM_FACTORIES = {

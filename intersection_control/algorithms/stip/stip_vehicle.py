@@ -10,7 +10,7 @@ from intersection_control.core import Vehicle, Environment, Message
 from intersection_control.core.environment import Trajectory
 
 
-class StipVehicle(Vehicle):
+class STIPVehicle(Vehicle):
     INTERSECTION_GRANULARITY = 10
     RECALCULATE_THRESHOLD = 0.5
     COMMUNICATION_RANGE = 75

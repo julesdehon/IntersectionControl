@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import logging
 
-from intersection_control.algorithms.stip.stip_vehicle import StipVehicle
+from intersection_control.algorithms.stip.stip_vehicle import STIPVehicle
 from intersection_control.environments.sumo import SumoEnvironment, RandomDemandGenerator
 from intersection_control.algorithms.qb_im import QBIMIntersectionManager
 from intersection_control.algorithms.qb_im import QBIMVehicle

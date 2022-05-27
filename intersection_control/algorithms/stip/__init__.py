@@ -1,5 +1,5 @@
-from .stip_vehicle import StipVehicle
+from .stip_vehicle import STIPVehicle
 
 __all__ = [
-    "StipVehicle"
+    "STIPVehicle"
 ]
