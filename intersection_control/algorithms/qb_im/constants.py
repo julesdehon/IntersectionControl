@@ -90,8 +90,6 @@ class IMMessageType:
     * late_error       — the tolerable error (late) in arrival time for the vehicle. Note that
                          the intersection manager must assume that the car could arrive and traverse the
                          intersection at any time within the resulting bounds
-    * arrival_lane     — a unique identifier for the lane in which the vehicle should be when
-                         it arrives at the intersection.
     * arrival_velocity — the velocity at which the vehicle is expected to be traveling
                          when it arrives at the intersection. A negative number signifies that any velocity
                          is acceptable.

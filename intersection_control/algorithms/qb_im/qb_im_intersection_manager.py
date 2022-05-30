@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Tuple, FrozenSet
+from typing import Dict, Tuple, FrozenSet, Set
 import logging
 
 from intersection_control.communication.distance_based_unit import DistanceBasedUnit
@@ -21,8 +21,9 @@ class QBIMIntersectionManager(IntersectionManager):
         super().__init__(intersection_id, environment)
         self.messaging_unit = DistanceBasedUnit(self.intersection_id, 75, self.get_position)
         self.time_discretisation = time_discretisation
-        self.tiles: Dict[((int, int), float), str] = {}  # A map from tiles and times to vehicle ids
-        self.reservations = {}  # A map from vehicles to sets of tiles
+        self.tiles: Dict[Tuple[Tuple[int, int], float], str] = {}  # A map from tiles and times to vehicle ids
+        # A map from vehicles to sets of tiles
+        self.reservations: Dict[str, Set[Tuple[float, FrozenSet[Tuple[int, int]]]]] = {}
         self.timeouts = {}  # A map from vehicles to times
         self.intersection = Intersection(self.get_width(),
                                          self.get_height(),
