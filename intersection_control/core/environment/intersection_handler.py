@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
 
 
 class Trajectory(ABC):
@@ -70,5 +70,16 @@ class IntersectionHandler(ABC):
         :param str intersection_id: The id of the intersection you want the
             trajectories for
         :return: A dictionary mapping trajectory ids to trajectories
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_traffic_light_phase(self, intersection_id: str, phase: Tuple[Set[str], Set[str], Set[str]]):
+        """Set the traffic lights at the given intersection to the phase described by phase
+
+        :param str intersection_id:
+        :param Tuple[Set[str], Set[str], Set[str]] phase: A tuple of length 3: (Green, Yellow, Red)  where each of
+            Green, Yellow and Red are sets of trajectory IDs such that all the trajectories in Red will be shown a red
+            light, and the same for Yellow and Green
         """
         raise NotImplementedError

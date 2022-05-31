@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Set
 from intersection_control.core import Environment
 from intersection_control.core.environment import Trajectory
 
@@ -60,3 +60,12 @@ class IntersectionManager(ABC):
         :return: intersection id
         """
         return self.intersection_id
+
+    def set_traffic_light_phase(self, phase: Tuple[Set[str], Set[str], Set[str]]):
+        """Set the traffic lights to the phase described by phase
+
+        :param Tuple[Set[str], Set[str], Set[str]] phase: A tuple of length 3: (Green, Yellow, Red)  where each of
+            Green, Yellow and Red are sets of trajectory IDs such that all the trajectories in Red will be shown a red
+            light, and the same for Yellow and Green
+        """
+        self.environment.intersections.set_traffic_light_phase(self.intersection_id, phase)

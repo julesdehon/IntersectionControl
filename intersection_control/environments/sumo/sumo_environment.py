@@ -46,14 +46,16 @@ class SumoEnvironment(Environment):
         if not warnings:
             sumo_cmd.append("--no-warnings")
         traci.start(sumo_cmd)
-        traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
         self.subscription_junction_id = traci.junction.getIDList()[0]
         traci.junction.subscribeContext(self.subscription_junction_id, tc.CMD_GET_VEHICLE_VARIABLE, 100_000_000,
                                         [tc.VAR_SPEED, tc.VAR_POSITION, tc.VAR_ROAD_ID, tc.VAR_LANE_ID, tc.VAR_LENGTH,
                                          tc.VAR_WIDTH, tc.VAR_ROUTE_ID, tc.VAR_DISTANCE, tc.VAR_ANGLE,
                                          tc.VAR_ALLOWED_SPEED, tc.VAR_ACCELERATION, tc.VAR_ACCEL, tc.VAR_DECEL])
-        traci.simulation.subscribe([tc.VAR_TIME, tc.VAR_ARRIVED_VEHICLES_IDS, tc.VAR_DEPARTED_VEHICLES_IDS])
-        self.subscription_results = None
+        traci.simulation.subscribe([tc.VAR_TIME, tc.VAR_ARRIVED_VEHICLES_IDS, tc.VAR_DEPARTED_VEHICLES_IDS,
+                                    tc.VAR_COLLIDING_VEHICLES_IDS])
+        traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
+        traci.junction.getContextSubscriptionResults(self.subscription_junction_id)
+        self.subscription_results = traci.simulation.getSubscriptionResults()
 
         self._intersections = SumoIntersectionHandler(net_file, route_file)
         self._vehicles = SumoVehicleHandler(net_file)
@@ -86,7 +88,8 @@ class SumoEnvironment(Environment):
         self.subscription_results = traci.simulation.getSubscriptionResults()
 
     def get_removed_vehicles(self) -> List[str]:
-        return self.subscription_results[tc.VAR_ARRIVED_VEHICLES_IDS]
+        return list(set(self.subscription_results[tc.VAR_ARRIVED_VEHICLES_IDS]
+                        + self.subscription_results[tc.VAR_COLLIDING_VEHICLES_IDS]))
 
     def get_added_vehicles(self) -> List[str]:
         return self.subscription_results[tc.VAR_DEPARTED_VEHICLES_IDS]

@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Set
 import numpy as np
 import traci
 import sumolib
@@ -94,10 +94,18 @@ class SumoIntersectionHandler(IntersectionHandler):
     def get_trajectories(self, intersection_id: str) -> Dict[str, Trajectory]:
         return self.trajectories[intersection_id]
 
+    def set_traffic_light_phase(self, intersection_id: str, phases: Tuple[Set[str], Set[str], Set[str]]):
+        (g, y, r) = phases
+        links = [self._get_route_through_edge(link) for [(_, _, link)] in
+                 traci.trafficlight.getControlledLinks(intersection_id)]
+        phase = ["r" if link in r else "y" if link in y else "g" for link in links]
+        traci.trafficlight.setRedYellowGreenState(intersection_id, "".join(phase))
+
     def _get_route_through_edge(self, edge) -> Optional[str]:
         for route in self.routes:
             edges = route.edges.split()
             inner_connection = self.net.getEdge(edges[0]).getConnections(self.net.getEdge(edges[1]))[0]
-            if self.net.getLane(inner_connection.getViaLaneID()).getID() == edge.getID():
+            if self.net.getLane(inner_connection.getViaLaneID()).getID() == \
+                    (edge if isinstance(edge, str) else edge.getID()):
                 return route.id
         return None
