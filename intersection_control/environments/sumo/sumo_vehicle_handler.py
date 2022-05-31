@@ -2,6 +2,7 @@ import math
 from typing import List, Dict, Optional, Tuple
 import sumolib
 import traci
+import traci.constants as tc
 from intersection_control.core.environment import VehicleHandler
 
 
@@ -18,55 +19,57 @@ class SumoVehicleHandler(VehicleHandler):
         # Dictionary mapping lanes to the intersection they are inside of
         self.intersection_containing_lane = self._get_intersections_containing_lanes()
 
+        self.subscription_results = None
+
     def approaching(self, vehicle_id: str) -> Optional[str]:
-        return self.intersection_entered_by_lane.get(traci.vehicle.getRoadID(vehicle_id))
+        return self.intersection_entered_by_lane.get(self.subscription_results[vehicle_id][tc.VAR_ROAD_ID])
 
     def departing(self, vehicle_id: str) -> Optional[str]:
-        return self.intersection_exited_by_lane.get(traci.vehicle.getRoadID(vehicle_id))
+        return self.intersection_exited_by_lane.get(self.subscription_results[vehicle_id][tc.VAR_ROAD_ID])
 
     def in_intersection(self, vehicle_id: str) -> Optional[str]:
-        return self.intersection_containing_lane.get(traci.vehicle.getLaneID(vehicle_id))
+        return self.intersection_containing_lane.get(self.subscription_results[vehicle_id][tc.VAR_LANE_ID])
 
     def get_ids(self) -> List[str]:
         return traci.vehicle.getIDList()
 
     def get_trajectory(self, vehicle_id: str) -> str:
-        return traci.vehicle.getRouteID(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_ROUTE_ID]
 
     def get_length(self, vehicle_id: str) -> float:
-        return traci.vehicle.getLength(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_LENGTH]
 
     def get_width(self, vehicle_id: str) -> float:
-        return traci.vehicle.getWidth(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_WIDTH]
 
     def get_driving_distance(self, vehicle_id: str) -> float:
-        road_end_x, road_end_y = self.net.getEdge(traci.vehicle.getRoadID(vehicle_id)).getShape()[-1]
+        road_end_x, road_end_y = self.net.getEdge(self.subscription_results[vehicle_id][tc.VAR_ROAD_ID]).getShape()[-1]
         return traci.vehicle.getDrivingDistance2D(vehicle_id, road_end_x, road_end_y)
 
     def get_speed(self, vehicle_id: str) -> float:
-        return traci.vehicle.getSpeed(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_SPEED]
 
     def get_position(self, vehicle_id) -> Tuple[float, float]:
-        return traci.vehicle.getPosition(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_POSITION]
 
     def get_direction(self, vehicle_id) -> float:
         # Transform as required
-        return math.pi - (math.radians(traci.vehicle.getAngle(vehicle_id)) + math.pi / 2) % (2 * math.pi)
+        return math.pi - (math.radians(self.subscription_results[vehicle_id][tc.VAR_ANGLE]) + math.pi / 2) % (2 * math.pi)
 
     def set_desired_speed(self, vehicle_id: str, to: float):
         traci.vehicle.setSpeed(vehicle_id, to)
 
     def get_speed_limit(self, vehicle_id) -> float:
-        return traci.vehicle.getAllowedSpeed(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_ALLOWED_SPEED]
 
     def get_acceleration(self, vehicle_id: str) -> float:
-        return traci.vehicle.getAcceleration(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_ACCELERATION]
 
     def get_max_acceleration(self, vehicle_id: str) -> float:
-        return traci.vehicle.getAccel(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_ACCEL]
 
     def get_max_deceleration(self, vehicle_id: str) -> float:
-        return traci.vehicle.getDecel(vehicle_id)
+        return self.subscription_results[vehicle_id][tc.VAR_DECEL]
 
     def _get_intersections_entered_by_lanes(self) -> Dict[str, str]:
         intersections = [node for node in self.net.getNodes() if node.getType() == "traffic_light"]

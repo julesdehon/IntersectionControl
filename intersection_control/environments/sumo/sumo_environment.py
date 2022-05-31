@@ -13,7 +13,7 @@ else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
 import sumolib
 import traci
-
+import traci.constants as tc
 from intersection_control.core import Environment
 from intersection_control.core.environment import VehicleHandler, IntersectionHandler
 from .sumo_intersection_handler import SumoIntersectionHandler
@@ -27,8 +27,6 @@ class SumoEnvironment(Environment):
                                 next(sumolib.xml.parse_fast(net_config_file, "net-file", "value")).value)
         route_file = os.path.join(os.path.dirname(net_config_file),
                                   next(sumolib.xml.parse_fast(net_config_file, "route-files", "value")).value)
-        self._intersections = SumoIntersectionHandler(net_file, route_file)
-        self._vehicles = SumoVehicleHandler(net_file)
         self.demand_generator = demand_generator
 
         # this script has been called from the command line. It will start sumo as a
@@ -49,6 +47,16 @@ class SumoEnvironment(Environment):
             sumo_cmd.append("--no-warnings")
         traci.start(sumo_cmd)
         traci.simulationStep()  # Perform a single step so all vehicles are loaded into the network.
+        self.subscription_junction_id = traci.junction.getIDList()[0]
+        traci.junction.subscribeContext(self.subscription_junction_id, tc.CMD_GET_VEHICLE_VARIABLE, 100_000_000,
+                                        [tc.VAR_SPEED, tc.VAR_POSITION, tc.VAR_ROAD_ID, tc.VAR_LANE_ID, tc.VAR_LENGTH,
+                                         tc.VAR_WIDTH, tc.VAR_ROUTE_ID, tc.VAR_DISTANCE, tc.VAR_ANGLE,
+                                         tc.VAR_ALLOWED_SPEED, tc.VAR_ACCELERATION, tc.VAR_ACCEL, tc.VAR_DECEL])
+        traci.simulation.subscribe([tc.VAR_TIME, tc.VAR_ARRIVED_VEHICLES_IDS, tc.VAR_DEPARTED_VEHICLES_IDS])
+        self.subscription_results = None
+
+        self._intersections = SumoIntersectionHandler(net_file, route_file)
+        self._vehicles = SumoVehicleHandler(net_file)
 
     @staticmethod
     def close():
@@ -63,7 +71,7 @@ class SumoEnvironment(Environment):
         return self._vehicles
 
     def get_current_time(self) -> float:
-        return traci.simulation.getTime()
+        return self.subscription_results[tc.VAR_TIME]
 
     def step(self):
         if self.demand_generator is not None:
@@ -74,12 +82,14 @@ class SumoEnvironment(Environment):
                     traci.vehicle.setSpeedMode(v.veh_id, 0b100110)
                     traci.vehicle.setSpeed(v.veh_id, v.depart_speed)  # The vehicle won't accelerate to the road's limit
         traci.simulationStep()
+        self.vehicles.subscription_results = traci.junction.getContextSubscriptionResults(self.subscription_junction_id)
+        self.subscription_results = traci.simulation.getSubscriptionResults()
 
     def get_removed_vehicles(self) -> List[str]:
-        return traci.simulation.getArrivedIDList()
+        return self.subscription_results[tc.VAR_ARRIVED_VEHICLES_IDS]
 
     def get_added_vehicles(self) -> List[str]:
-        return traci.simulation.getDepartedIDList()
+        return self.subscription_results[tc.VAR_DEPARTED_VEHICLES_IDS]
 
     def clear(self):
         for v in traci.vehicle.getIDList():

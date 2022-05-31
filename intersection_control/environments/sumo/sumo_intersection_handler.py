@@ -71,22 +71,25 @@ class SumoIntersectionHandler(IntersectionHandler):
                 }
             for intersection in self.net.getNodes() if intersection.getType() == "traffic_light"
         }
+        # Can assume the junctions will not move or change shape, so can do this to reduce the number of traci calls
+        self._positions = {i_id: traci.junction.getPosition(i_id) for i_id in self.get_ids()}
+        self._shapes = {i_id: traci.junction.getShape(i_id) for i_id in self.get_ids()}
 
     def get_ids(self) -> List[str]:
         return [node.getID() for node in self.net.getNodes() if node.getType() == "traffic_light"]
 
     def get_width(self, intersection_id: str) -> float:
-        shape = traci.junction.getShape(intersection_id)
+        shape = self._shapes[intersection_id]
         xs = [x for (x, _) in shape]
         return max(xs) - min(xs)
 
     def get_height(self, intersection_id: str) -> float:
-        shape = traci.junction.getShape(intersection_id)
+        shape = self._shapes[intersection_id]
         ys = [y for (y, _) in shape]
         return max(ys) - min(ys)
 
     def get_position(self, intersection_id: str) -> Tuple[float, float]:
-        return traci.junction.getPosition(intersection_id)
+        return self._positions[intersection_id]
 
     def get_trajectories(self, intersection_id: str) -> Dict[str, Trajectory]:
         return self.trajectories[intersection_id]
