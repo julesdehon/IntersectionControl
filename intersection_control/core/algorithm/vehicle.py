@@ -25,6 +25,14 @@ class Vehicle(ABC):
         Can assume that the state of the environment has changed since step
         was last called. This is where the main behaviour of the vehicle
         should be implemented"""
+        raise NotImplementedError
+
+    def destroy(self):
+        """Called when the vehicle is removed from the environment
+
+        Can optionally be implemented to do some clean-up functions if needed.
+        If this isn't needed, this method can simply be ignored.
+        """
         pass
 
     def approaching(self) -> Optional[str]:
