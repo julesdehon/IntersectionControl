@@ -16,7 +16,7 @@ class ConflictingDemandGenerator(DemandGenerator):
 
     def step(self) -> List[NewVehicleParams]:
         self.step_count += 1
-        if self.step_count % 200 != 0 and self.step_count % 250 != 0 and self.step_count % 300 != 0:
+        if self.step_count % 200 != 0:
             return []
 
         next_id = self.get_next_id()
