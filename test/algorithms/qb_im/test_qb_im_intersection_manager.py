@@ -1,5 +1,5 @@
 import unittest
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Set
 from unittest.mock import MagicMock, patch
 from callee import Captor
 import math
@@ -169,6 +169,9 @@ class FakeIntersectionHandler(IntersectionHandler):
             "EW": PointBasedTrajectory(10, [np.array((30., 10.)), np.array((-30., 10.))]),
             "WE": PointBasedTrajectory(10, [np.array((-30., -10.)), np.array((30., -10.))])
         }
+
+    def set_traffic_light_phase(self, intersection_id: str, phase: Tuple[Set[str], Set[str], Set[str]]):
+        pass
 
 
 class FakeEnv(Environment):
