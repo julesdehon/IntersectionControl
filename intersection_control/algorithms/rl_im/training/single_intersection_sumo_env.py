@@ -5,6 +5,7 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.utils.typing import MultiAgentDict
 import gym.spaces as spaces
 
+from intersection_control.algorithms.rl_im.constants import RLMode
 from intersection_control.algorithms.rl_im.rl_vehicle import RLVehicle
 from intersection_control.environments import SumoEnvironment
 from intersection_control.environments.sumo import ScenarioGenerator
@@ -40,8 +41,8 @@ class MultiAgentSumoEnv(MultiAgentEnv):
                                    demand_generator=self.demand_generator, time_step=0.1, gui=self.gui, warnings=False)
         self.env.step()  # Load all the vehicles in
 
-        self.vehicles: Dict[str, RLVehicle] = {vehicle_id: RLVehicle(vehicle_id, self.env, "intersection") for
-                                               vehicle_id in self.env.vehicles.get_ids()}
+        self.vehicles: Dict[str, RLVehicle] = {vehicle_id: RLVehicle(vehicle_id, self.env, "intersection", RLMode.TRAIN)
+                                               for vehicle_id in self.env.vehicles.get_ids()}
 
         for vehicle in self.vehicles.values():
             vehicle.step()  # So they all broadcast their details, ready for the observations
@@ -93,7 +94,7 @@ class MultiAgentSumoEnv(MultiAgentEnv):
                                        demand_generator=self.demand_generator, time_step=0.1, gui=self.gui,
                                        warnings=False)
             self.env.step()  # Load all the vehicles in
-            self.vehicles = {vehicle_id: RLVehicle(vehicle_id, self.env, "intersection") for
+            self.vehicles = {vehicle_id: RLVehicle(vehicle_id, self.env, "intersection", RLMode.TRAIN) for
                              vehicle_id in self.env.vehicles.get_ids()}
             for vehicle in self.vehicles.values():
                 vehicle.step()  # So they all broadcast their details, ready for the observations

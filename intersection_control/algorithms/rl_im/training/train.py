@@ -4,8 +4,13 @@ import time
 from datetime import datetime
 from ray.rllib.agents import ppo
 from ray.tune.registry import register_env
-from single_intersection_sumo_env import MultiAgentSumoEnv
 
+from intersection_control.algorithms.rl_im.constants import RLMode
+from intersection_control.algorithms.rl_im.rl_vehicle import RLVehicle
+from intersection_control.environments import SumoEnvironment
+from intersection_control.environments.sumo import RandomDemandGenerator
+from intersection_control.environments.sumo.sumo_environment import ControlType
+from single_intersection_sumo_env import MultiAgentSumoEnv
 
 CHECKPOINT_EVERY = 30
 N_ITER = 30
@@ -47,7 +52,7 @@ def train():
     out.close()
 
 
-def simulate_using_trained_trainer():
+def evaluate():
     np.set_printoptions(suppress=True)
     ray.init()
 
@@ -66,28 +71,29 @@ def simulate_using_trained_trainer():
 
     trainer.restore("./checkpoints/checkpoint_000151/checkpoint-151")
 
-    env = MultiAgentSumoEnv({}, gui=True)
-    obs = env.reset()
-    dones = {"__all__": False}
-    while not dones["__all__"]:
-        actions = trainer.compute_actions(obs)
-        print(actions)
-        obs, rewards, dones, info = env.step(actions)
-        print(rewards)
+    demand_generator = RandomDemandGenerator({
+        "NE": 1, "NS": 1, "NW": 1,
+        "EN": 1, "ES": 1, "EW": 1,
+        "SN": 1, "SE": 1, "SW": 1,
+        "WN": 1, "WE": 1, "WS": 1
+    }, 0.05, control_type=ControlType.MANUAL)
+    env = SumoEnvironment("../../../environments/sumo/networks/single_intersection/intersection.sumocfg",
+                          demand_generator=demand_generator, time_step=0.05, gui=True)
+    vehicles = {RLVehicle(vehicle_id, env, env.intersections.get_ids()[0], RLMode.EVALUATE, trainer) for vehicle_id in
+                env.vehicles.get_ids()}
 
-
-def test():
-    env = MultiAgentSumoEnv({}, gui=True)
-    obs = env.reset()
-    dones = {"__all__": False}
-    while not dones["__all__"]:
-        obs, rewards, dones, infos = env.step({v: env.action_space.sample() for v in obs})
-        for v in obs:
-            print(v)
-            print(obs[v])
-            print(rewards[v])
-            print("")
+    step_count = 360000  # 1 hour
+    for _ in range(step_count):
+        env.step()
+        removed_vehicles = {v for v in vehicles if v.get_id() in env.get_removed_vehicles()}
+        for v in removed_vehicles:
+            v.destroy()
+        new_vehicles = {RLVehicle(vehicle_id, env, env.intersections.get_ids()[0], RLMode.EVALUATE, trainer) for
+                        vehicle_id in env.get_added_vehicles()}
+        vehicles = (vehicles - removed_vehicles).union(new_vehicles)
+        for vehicle in vehicles:
+            vehicle.step()
 
 
 if __name__ == "__main__":
-    train()
+    evaluate()
