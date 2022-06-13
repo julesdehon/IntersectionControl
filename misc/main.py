@@ -24,12 +24,12 @@ TL_PHASES = [
 
 im_factory = {
     "qb_im": lambda imid, env: QBIMIntersectionManager(imid, env, 30, 0.05),
-    "stip": lambda imid, env: None,
+    "stip": None,
     "tl": lambda imid, env: TLIntersectionManager(imid, env, TL_PHASES)
 }
 
 vehicle_factory = {
-    "qb_im": lambda vid, env: QBIMVehicle(vid, env, communication_range=50),
+    "qb_im": lambda vid, env: QBIMVehicle(vid, env, communication_range=75),
     "stip": lambda vid, env: STIPVehicle(vid, env),
     "tl": lambda vid, env: TLVehicle(vid, env)
 }
@@ -38,14 +38,15 @@ vehicle_factory = {
 def main():
     logging.basicConfig(level=logging.DEBUG)
     algo = "qb_im"
+    rate = 2
 
-    demand_generator = RandomDemandGenerator({
-        "NE": 2, "NS": 2, "NW": 2,
-        "EN": 2, "ES": 2, "EW": 2,
-        "SN": 2, "SE": 2, "SW": 2,
-        "WN": 2, "WE": 2, "WS": 2
-    }, 0.05)
-    # demand_generator = ConflictingDemandGenerator()
+    # demand_generator = RandomDemandGenerator({
+    #     "NE": rate, "NS": rate, "NW": rate,
+    #     "EN": rate, "ES": rate, "EW": rate,
+    #     "SN": rate, "SE": rate, "SW": rate,
+    #     "WN": rate, "WE": rate, "WS": rate
+    # }, 0.05)
+    demand_generator = ConflictingDemandGenerator()
     env = SumoEnvironment("intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
                           demand_generator=demand_generator, time_step=0.05, gui=True)
 

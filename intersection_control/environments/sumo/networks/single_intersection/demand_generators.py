@@ -16,11 +16,12 @@ class ConflictingDemandGenerator(DemandGenerator):
 
     def step(self) -> List[NewVehicleParams]:
         self.step_count += 1
-        if self.step_count % 200 != 0:
+        if self.step_count % 200 != 0 and self.step_count % 200 != 50:
             return []
 
         next_id = self.get_next_id()
-        conflicting = [("EW", 9), ("NW", 9.5), ("SW", 10)]
+        # conflicting = [("EW", 9), ("NW", 9.5), ("SW", 10)]
+        conflicting = [("WN", 10), ("NW", 10)]
 
         return [NewVehicleParams(f"{route}{next_id}", route, depart_speed=depart_speed) for route, depart_speed in
                 conflicting]

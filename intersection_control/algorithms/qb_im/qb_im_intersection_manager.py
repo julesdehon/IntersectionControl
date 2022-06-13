@@ -1,6 +1,13 @@
 from __future__ import annotations
+
+import os
+
+import matplotlib.pyplot as plt
+
 from typing import Dict, Tuple, FrozenSet, Set
 import logging
+
+from matplotlib import patches, transforms
 
 from intersection_control.communication.distance_based_unit import DistanceBasedUnit
 from intersection_control.core import IntersectionManager
@@ -12,8 +19,11 @@ import math
 
 logger = logging.getLogger(__name__)
 
-TIME_BUFFER = 0.2
+TIME_BUFFER = 0.5
+SAFETY_BUFFER = (0.5, 1)
 MUST_ACCELERATE_THRESHOLD = 2  # Vehicles travelling slower than this threshold must accelerate through the intersection
+
+plots = False
 
 
 class QBIMIntersectionManager(IntersectionManager):
@@ -27,8 +37,13 @@ class QBIMIntersectionManager(IntersectionManager):
         self.timeouts = {}  # A map from vehicles to times
         self.intersection = Intersection(self.get_width(),
                                          self.get_height(),
+                                         self.get_position(),
                                          granularity,
                                          self.get_trajectories())
+        if plots:
+            os.mkdir("plots")
+            self.n = 0
+        self.d = {trajectory[0]: np.inf for trajectory in self.get_trajectories()}
 
     def step(self):
         for message in self.messaging_unit.receive():
@@ -39,10 +54,11 @@ class QBIMIntersectionManager(IntersectionManager):
                 or message.contents["type"] == VehicleMessageType.CHANGE_REQUEST:
             self.handle_request_message(message)
         elif message.contents["type"] == VehicleMessageType.DONE:
-            logger.debug(f"Received done message from {message.sender}")
+            logger.debug(f"[{self.environment.get_current_time()}] Received done message from {message.sender}")
             self.handle_done_message(message)
         else:
-            logger.warning(f"Received unknown message type from {message.sender}. Ignoring.")
+            logger.warning(f"[{self.environment.get_current_time()}] Received unknown message type "
+                           f"from {message.sender}. Ignoring.")
 
     def handle_request_message(self, message: Message):
         assert message.contents["type"] == VehicleMessageType.REQUEST \
@@ -59,7 +75,8 @@ class QBIMIntersectionManager(IntersectionManager):
         # If the vehicle is still on timeout, reject the request
         curr_time = self.discretise_time(self.environment.get_current_time())
         if message.sender in self.timeouts and self.timeouts[message.sender] > curr_time:
-            logger.debug(f"Rejecting request for {message.sender}: timeout not yet served")
+            logger.debug(f"[{self.environment.get_current_time()}] Rejecting request for {message.sender}: "
+                         f"timeout not yet served")
             self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
                 "type": IMMessageType.REJECT,
                 "timeout": self.timeouts[message.sender]
@@ -69,8 +86,23 @@ class QBIMIntersectionManager(IntersectionManager):
         arrival_time = message.contents["arrival_time"]
         self.timeouts[message.sender] = curr_time + min(0.5, (arrival_time - curr_time) / 2)
 
-        for acceleration in (
-                [True, False] if message.contents["arrival_velocity"] > MUST_ACCELERATE_THRESHOLD else [True]):
+        # If farther than nearest rejected vehicle, reject the request
+        if message.contents["distance"] > self.d[message.contents["arrival_lane"][0]]:
+            logger.debug(f"[{self.environment.get_current_time()}] Rejecting request for {message.sender}: "
+                         f"farther away than nearest waiting vehicle")
+            self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
+                "type": IMMessageType.REJECT,
+                "timeout": self.timeouts[message.sender]
+            }))
+            return
+
+        if plots:
+            os.mkdir(f"plots/attempt_{self.n}")
+            self.n += 1
+
+        for acceleration in [True, False]:
+            if plots:
+                os.mkdir(f"plots/attempt_{self.n - 1}/{'acceleration' if acceleration else 'constant'}")
             tile_times = set()
             time = self.discretise_time(arrival_time)
             temp_vehicle = InternalVehicle(message.contents["arrival_velocity"],
@@ -82,21 +114,27 @@ class QBIMIntersectionManager(IntersectionManager):
             no_collisions = True
             while temp_vehicle.is_in_intersection():
                 # TODO: Tune safety buffer
-                occupied_tiles = self.intersection.get_tiles_for_vehicle(temp_vehicle, (2, 2))
+                occupied_tiles = self.intersection.get_tiles_for_vehicle(temp_vehicle, SAFETY_BUFFER)
+                if plots:
+                    draw(self.intersection, temp_vehicle, time, self.tiles,
+                         f"plots/attempt_{self.n - 1}/{'acceleration' if acceleration else 'constant'}/{time}.png",
+                         SAFETY_BUFFER)
                 tile_times.add((time, occupied_tiles))
                 for tile in occupied_tiles:
                     buf = TIME_BUFFER  # TODO: Tune this - the time buffer around which reservation slots are checked
                     for i in np.arange(-buf, buf, self.time_discretisation):
                         if (tile, time + i) in self.tiles:
-                            if acceleration:
+                            if acceleration and message.contents["arrival_velocity"] > MUST_ACCELERATE_THRESHOLD:
                                 no_collisions = False
                                 break
                             else:
-                                logger.debug(f"Rejecting request for {message.sender}: reservation collision")
+                                logger.debug(f"[{self.environment.get_current_time()}] Rejecting request for "
+                                             f"{message.sender}: reservation collision")
                                 self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
                                     "type": IMMessageType.REJECT,
                                     "timeout": self.timeouts[message.sender]
                                 }))
+                                self.d[message.contents["arrival_lane"][0]] = message.contents["distance"]
                                 return
                     if not no_collisions:
                         break
@@ -115,16 +153,17 @@ class QBIMIntersectionManager(IntersectionManager):
                 for tile in tiles:
                     self.tiles[(tile, time)] = message.sender
             self.reservations[message.sender] = tile_times
-            logger.debug(f"Accepting request for {message.sender}")
+            logger.debug(f"[{self.environment.get_current_time()}] Accepting request for {message.sender}")
             self.messaging_unit.send(message.sender, Message(self.messaging_unit.address, {
                 "type": IMMessageType.CONFIRM,
                 "reservation_id": message.sender,
                 "arrival_time": arrival_time,
                 "arrival_velocity": message.contents["arrival_velocity"],
-                "early_error": arrival_time - TIME_BUFFER / 2,
-                "late_error": arrival_time + TIME_BUFFER / 2,
+                "early_error": arrival_time - TIME_BUFFER,
+                "late_error": arrival_time + TIME_BUFFER,
                 "accelerate": acceleration
             }))
+            self.d[message.contents["arrival_lane"][0]] = np.inf
             break
 
     def handle_done_message(self, message: Message):
@@ -185,13 +224,13 @@ class Intersection:
         trajectory. Vehicle movement along those trajectories can then be interpolated between those points.
     """
 
-    def __init__(self, width: float, height: float, granularity: int,
+    def __init__(self, width: float, height: float, position: Tuple[float, float], granularity: int,
                  trajectories: Dict[str, Trajectory]):
         self.grid = np.full((granularity, granularity), False)
         self.granularity = granularity
-        self.width = width
-        self.height = height
+        self.size = np.array([width, height])
         self.trajectories = trajectories
+        self.position = position
 
     def get_tiles_for_vehicle(self, vehicle: InternalVehicle,
                               safety_buffer: Tuple[float, float]) -> FrozenSet[Tuple[int, int]]:
@@ -209,19 +248,88 @@ class Intersection:
             vehicle.position + v1 - v2
         ])
 
-        min_x = np.min(corners[:, 0])
-        max_x = np.max(corners[:, 0])
-        min_y = np.min(corners[:, 1])
-        max_y = np.max(corners[:, 1])
+        corners_transformed = np.array([
+            (((corner - self.position) + self.size / 2) / self.size) * self.granularity for corner in corners
+        ])
 
-        min_x_box = math.floor(((min_x + self.width / 2) / self.width) * self.granularity)
-        max_x_box = math.floor(((max_x + self.width / 2) / self.width) * self.granularity)
-        min_y_box = math.floor(((min_y + self.width / 2) / self.width) * self.granularity)
-        max_y_box = math.floor(((max_y + self.width / 2) / self.width) * self.granularity)
+        min_x = math.floor(np.min(corners_transformed[:, 0]))
+        max_x = math.floor(np.max(corners_transformed[:, 0]))
+        min_y = math.floor(np.min(corners_transformed[:, 1]))
+        max_y = math.floor(np.max(corners_transformed[:, 1]))
 
         tile_coords = set()
-        for i in range(min_x_box, max_x_box + 1):
-            for j in range(min_y_box, max_y_box + 1):
-                tile_coords.add((i, j))
+        for i in range(min_x, max_x + 1):
+            for j in range(min_y, max_y + 1):
+                for di in [0, 1]:
+                    for dj in [0, 1]:
+                        if self._is_point_in_rectangle(corners_transformed, np.array((i + di, j + dj))):
+                            tile_coords.add((i, j))
+                            break
 
         return frozenset(tile_coords)
+
+    def _is_point_in_rectangle(self, corners, point):
+        ab = corners[1] - corners[0]
+        am = point - corners[0]
+
+        bc = corners[2] - corners[1]
+        bm = point - corners[1]
+        return 0 <= np.dot(ab, am) <= np.dot(ab, ab) and 0 <= np.dot(bc, bm) <= np.dot(bc, bc)
+
+
+def color_tile(ax, tile, intersection, color):
+    i, j = tile
+    x_coord = (i * (intersection.size[0] / intersection.granularity)) - intersection.size[0] / 2
+    y_coord = (j * (intersection.size[1] / intersection.granularity)) - intersection.size[1] / 2
+    rect = patches.Rectangle((x_coord, y_coord), intersection.size[0] / intersection.granularity,
+                             intersection.size[1] / intersection.granularity, linewidth=1, edgecolor='none',
+                             facecolor=color, zorder=1)
+    ax.add_patch(rect)
+
+
+def draw(intersection: Intersection, vehicle: InternalVehicle, time: float, tile_times: Dict[((int, int), float), str],
+         save_to: str, safety_buffer: Tuple[float, float]):
+    fig, ax = plt.subplots()
+    ax.axis('equal')
+    ax.spines['left'].set_position('zero')
+    ax.spines['right'].set_color('none')
+    ax.spines['bottom'].set_position('zero')
+    ax.spines['top'].set_color('none')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    ax.set_xticks(np.arange(-intersection.size[0] / 2, intersection.size[0] / 2,
+                            intersection.size[0] / intersection.granularity))
+    ax.set_yticks(np.arange(-intersection.size[1] / 2, intersection.size[1] / 2,
+                            intersection.size[1] / intersection.granularity))
+    ax.set_xlim((-intersection.size[0] / 2 - 1, intersection.size[0] / 2 + 1))
+    ax.set_ylim((-intersection.size[1] / 2 - 1, intersection.size[1] / 2 + 1))
+    ax.grid()
+    fig.suptitle(str(time))
+
+    x, y = vehicle.position
+    x -= vehicle.width / 2
+    y -= vehicle.length / 2
+    car = patches.Rectangle((x, y), vehicle.width, vehicle.length, linewidth=1, edgecolor='r',
+                            facecolor='none', zorder=5)
+    t = transforms.Affine2D().rotate_around(vehicle.position[0], vehicle.position[1],
+                                            vehicle.angle + math.radians(90)) + ax.transData
+    car.set_transform(t)
+    ax.add_patch(car)
+
+    x -= safety_buffer[0] / 2
+    y -= safety_buffer[1] / 2
+    car = patches.Rectangle((x, y), vehicle.width + safety_buffer[0], vehicle.length + safety_buffer[1], linewidth=1,
+                            edgecolor='k', facecolor='none', zorder=5)
+    t = transforms.Affine2D().rotate_around(vehicle.position[0], vehicle.position[1],
+                                            vehicle.angle + math.radians(90)) + ax.transData
+    car.set_transform(t)
+    ax.add_patch(car)
+
+    tiles = intersection.get_tiles_for_vehicle(vehicle, safety_buffer)
+    for tile in tiles:
+        color_tile(ax, tile, intersection, 'gray')
+    for tile in [tile for tile, t in tile_times.keys() if t == time]:
+        color_tile(ax, tile, intersection, 'red')
+
+    plt.savefig(save_to)
+    plt.close(fig)
