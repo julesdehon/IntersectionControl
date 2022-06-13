@@ -27,7 +27,7 @@ class TestIntersection(unittest.TestCase):
             "WN": PointBasedTrajectory(10, [np.array((-30., -10.)), np.array((-8., -4.)),
                                             np.array((6., 12.)), np.array((10., 30.))])
         }
-        self.intersection = Intersection(60, 60, 20, trajectories)
+        self.intersection = Intersection(60, 60, (0, 0), 20, trajectories)
 
     def test_tiles_for_straight_trajectory_are_along_the_same_axis(self):
         vehicle = InternalVehicle(10,  # velocity
@@ -76,18 +76,12 @@ class TestIntersectionManager(unittest.TestCase):
             "vehicle_id": "Bob",
             "arrival_time": 3,
             "arrival_lane": "WE",
-            "turn": "s",
             "arrival_velocity": 6.5,
-            "maximum_velocity": 11,
             "maximum_acceleration": 5,
-            "minimum_acceleration": -2,
+            "maximum_velocity": 11,
             "vehicle_length": 5,
             "vehicle_width": 2,
-            "front_wheel_displacement": 1,
-            "rear_wheel_displacement": 1,
-            "max_steering_angle": math.radians(45),
-            "max_turn_per_second": math.radians(10),
-            "emergency": False
+            "distance": 10,
         }))
         self.im.step()
         captured_message = Captor()
@@ -103,18 +97,12 @@ class TestIntersectionManager(unittest.TestCase):
             "vehicle_id": "Bob",
             "arrival_time": 3,
             "arrival_lane": "WE",
-            "turn": "s",
             "arrival_velocity": 6.5,
-            "maximum_velocity": 11,
             "maximum_acceleration": 5,
-            "minimum_acceleration": -2,
+            "maximum_velocity": 11,
             "vehicle_length": 5,
             "vehicle_width": 2,
-            "front_wheel_displacement": 1,
-            "rear_wheel_displacement": 1,
-            "max_steering_angle": math.radians(45),
-            "max_turn_per_second": math.radians(10),
-            "emergency": False
+            "distance": 10,
         }))
         self.im.step()
         self.im.messaging_unit.send.assert_called_once()
@@ -124,18 +112,12 @@ class TestIntersectionManager(unittest.TestCase):
             "vehicle_id": "Pat",
             "arrival_time": 3,
             "arrival_lane": "WE",
-            "turn": "s",
             "arrival_velocity": 6.5,
-            "maximum_velocity": 11,
             "maximum_acceleration": 5,
-            "minimum_acceleration": -2,
+            "maximum_velocity": 11,
             "vehicle_length": 5,
             "vehicle_width": 2,
-            "front_wheel_displacement": 1,
-            "rear_wheel_displacement": 1,
-            "max_steering_angle": math.radians(45),
-            "max_turn_per_second": math.radians(10),
-            "emergency": False
+            "distance": 10,
         }))
         self.im.step()
         captured_message = Captor()
