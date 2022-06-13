@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import math
-from typing import Dict, Tuple, FrozenSet, Optional, Set
-
+from typing import Tuple, Optional, Set
 import numpy as np
+
 from intersection_control.algorithms.stip.constants import VehicleState, MessageType
+from intersection_control.algorithms.utils.discretised_intersection import Intersection, InternalVehicle
 from intersection_control.communication import DistanceBasedUnit
 from intersection_control.core import Vehicle, Environment, Message
 from intersection_control.core.environment import Trajectory
@@ -13,6 +13,7 @@ from intersection_control.core.environment import Trajectory
 class STIPVehicle(Vehicle):
     INTERSECTION_GRANULARITY = 10
     RECALCULATE_THRESHOLD = 0.5
+    SAFETY_BUFFER = (0.5, 1)
     COMMUNICATION_RANGE = 75
 
     def __init__(self, vehicle_id: str, environment: Environment):
@@ -22,7 +23,7 @@ class STIPVehicle(Vehicle):
         self.approaching_intersection: Optional[Intersection] = None
         self.trajectory: Optional[Trajectory] = None
         self.arrived_at: Optional[float] = None
-        self.target_speed = self.get_speed()
+        self.target_speed: float = self.get_speed()
         self.cached_cells: Optional[Tuple[float, Set[Tuple[int, int]]]] = None
 
     def step(self):
@@ -62,7 +63,10 @@ class STIPVehicle(Vehicle):
             "id": self.get_id(),
             "arrival_time": self.approximate_arrival_time(),
             "exit_time": self.approximate_exit_time(),
-            "trajectory_cells_list": self.get_trajectory_cells_list()
+            "trajectory_cells_list": self.get_trajectory_cells_list(),
+            "lane": self.get_trajectory()[0],
+            "distance": np.linalg.norm(np.array(self.get_position()) - np.array(
+                self.environment.intersections.get_position(self.approaching())))
         })
 
     def cross_message(self) -> Message:
@@ -71,7 +75,9 @@ class STIPVehicle(Vehicle):
             "id": self.get_id(),
             "arrival_time": self.arrived_at,
             "exit_time": self.approximate_exit_time(),
-            "trajectory_cells_list": self.get_trajectory_cells_list()
+            "trajectory_cells_list": self.get_trajectory_cells_list(),
+            "lane": self.get_trajectory()[0],
+            "distance": 0
         })
 
     def exit_message(self) -> Message:
@@ -84,7 +90,9 @@ class STIPVehicle(Vehicle):
         if self.arrived_at is not None:
             return self.arrived_at
         driving_distance = self.get_driving_distance()
-        target_speed = self.target_speed if self.target_speed is not None else self.get_speed()
+        target_speed = min(self.target_speed, self.get_speed())
+        if target_speed == 0:
+            target_speed = self.target_speed
         return self.environment.get_current_time() + driving_distance / target_speed
 
     def approximate_exit_time(self):
@@ -100,7 +108,7 @@ class STIPVehicle(Vehicle):
                             self.approaching_intersection)
         cells = set()
         while v.is_in_intersection():
-            cells = cells.union(self.approaching_intersection.get_tiles_for_vehicle(v, (2, 2)))
+            cells = cells.union(self.approaching_intersection.get_tiles_for_vehicle(v, self.SAFETY_BUFFER))
             v.update(0.25)
 
         self.cached_cells = self.approximate_arrival_time(), cells
@@ -123,10 +131,14 @@ class STIPVehicle(Vehicle):
         intersection_id = self.approaching()
         self.approaching_intersection = Intersection(self.environment.intersections.get_width(intersection_id),
                                                      self.environment.intersections.get_height(intersection_id),
+                                                     self.environment.intersections.get_position(intersection_id),
                                                      self.INTERSECTION_GRANULARITY,
                                                      self.environment.intersections.get_trajectories(intersection_id))
         self.trajectory = self.environment.intersections.get_trajectories(intersection_id)[self.get_trajectory()]
         self.state = VehicleState.APPROACH
+        self.target_speed = self.get_speed()
+        self.cached_cells = None
+        self.arrived_at = None
 
     def does_overlap_with(self, c):
         space_overlaps = len(self.get_trajectory_cells_list().intersection(c["trajectory_cells_list"])) > 0
@@ -135,6 +147,9 @@ class STIPVehicle(Vehicle):
         return space_overlaps and time_overlaps
 
     def has_priority(self, c):
+        if c["lane"] == self.get_trajectory()[0]:
+            return np.linalg.norm(np.array(self.get_position()) - np.array(
+                self.environment.intersections.get_position(self.approaching()))) < c["distance"]
         t = self.approximate_arrival_time()
         return t < c["arrival_time"] or (t == c["arrival_time"] and self.get_id() < c["id"])
 
@@ -147,84 +162,3 @@ class STIPVehicle(Vehicle):
 
     def destroy(self):
         self.messaging_unit.destroy()
-
-
-class InternalVehicle:
-    def __init__(self, velocity, length, width, trajectory, intersection: Intersection):
-        self.velocity = velocity
-        self.acceleration = 0
-        self.length = length
-        self.width = width
-        self.intersection = intersection
-        self.trajectory = intersection.trajectories[trajectory]
-        self.position, self.angle = self.trajectory.get_starting_position()
-        self.distance_moved = 0
-
-    def is_in_intersection(self):
-        return self.distance_moved < self.trajectory.get_length()
-
-    def update(self, dt):
-        self.distance_moved = self.distance_moved + self.velocity * dt
-        self.position, self.angle = self.trajectory.point_at(self.distance_moved)
-        self.velocity += self.acceleration * dt
-
-
-class Intersection:
-    """
-    A class to represent an intersection, as perceived by the Query-Based Intersection Manager
-
-    Attributes
-    ----------
-    grid : np.ndarray (granularity, granularity)
-        The discretised grid that forms the intersection
-    granularity : int
-        Determines how precisely the area of the intersection will be discretised
-    width: float
-        The width of the intersection
-    height: float
-        The height of the intersection
-    trajectories: Dict[str, [np.ndarray]]
-        A mapping from trajectory name to trajectory. A trajectory is characterised by a list of positions along that
-        trajectory. Vehicle movement along those trajectories can then be interpolated between those points.
-    """
-
-    def __init__(self, width: float, height: float, granularity: int,
-                 trajectories: Dict[str, Trajectory]):
-        self.grid = np.full((granularity, granularity), False)
-        self.granularity = granularity
-        self.width = width
-        self.height = height
-        self.trajectories = trajectories
-
-    def get_tiles_for_vehicle(self, vehicle: InternalVehicle,
-                              safety_buffer: Tuple[float, float]) -> FrozenSet[Tuple[int, int]]:
-        # normalised perpendicular vectors
-        v1 = np.array([np.cos(vehicle.angle), np.sin(vehicle.angle)])
-        v2 = np.array([-v1[1], v1[0]])
-
-        v1 *= (vehicle.length + safety_buffer[1]) / 2
-        v2 *= (vehicle.width + safety_buffer[0]) / 2
-
-        corners = np.array([
-            vehicle.position + v1 + v2,
-            vehicle.position - v1 + v2,
-            vehicle.position - v1 - v2,
-            vehicle.position + v1 - v2
-        ])
-
-        min_x = np.min(corners[:, 0])
-        max_x = np.max(corners[:, 0])
-        min_y = np.min(corners[:, 1])
-        max_y = np.max(corners[:, 1])
-
-        min_x_box = math.floor(((min_x + self.width / 2) / self.width) * self.granularity)
-        max_x_box = math.floor(((max_x + self.width / 2) / self.width) * self.granularity)
-        min_y_box = math.floor(((min_y + self.width / 2) / self.width) * self.granularity)
-        max_y_box = math.floor(((max_y + self.width / 2) / self.width) * self.granularity)
-
-        tile_coords = set()
-        for i in range(min_x_box, max_x_box + 1):
-            for j in range(min_y_box, max_y_box + 1):
-                tile_coords.add((i, j))
-
-        return frozenset(tile_coords)

@@ -11,8 +11,8 @@ from intersection_control.core import Environment
 from intersection_control.core.environment import VehicleHandler, IntersectionHandler
 from intersection_control.core.algorithm.intersection_manager import Trajectory
 from intersection_control.core.communication import Message
-from intersection_control.algorithms.qb_im.qb_im_intersection_manager import Intersection, InternalVehicle, \
-    QBIMIntersectionManager
+from intersection_control.algorithms.qb_im.qb_im_intersection_manager import QBIMIntersectionManager
+from intersection_control.algorithms.utils.discretised_intersection import InternalVehicle, Intersection
 from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType
 from intersection_control.environments.sumo.sumo_intersection_handler import PointBasedTrajectory
 

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.transforms as transforms
 
-from intersection_control.algorithms.qb_im.qb_im_intersection_manager import Intersection, InternalVehicle
+from intersection_control.algorithms.utils.discretised_intersection import InternalVehicle, Intersection
 from intersection_control.environments.sumo.sumo_intersection_handler import PointBasedTrajectory
 
 
