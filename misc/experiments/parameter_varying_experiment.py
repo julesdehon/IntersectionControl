@@ -23,6 +23,7 @@ def main():
     for granularity in GRANULARITIES:
         print(f"Running experiments for granularity {granularity}")
         for vpm in VPMs:
+            print(f"Running experiments for {vpm} vehicles per minute")
             total = 0
             successful_experiments = 0
             for i in range(RUNS_PER_GRANULARITY):
@@ -45,11 +46,17 @@ def run_experiment(vpm: float, granularity: int):
     env = SumoEnvironment(
         "../../intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
         demand_generator=demand_generator, time_step=TIME_STEP, gui=False)
-    vehicles = {QBIMVehicle(vid, env, DistanceBasedUnit(vid, 75, lambda: env.vehicles.get_position(vid))) for
+
+    def v_position_function(vid):
+        return lambda: env.vehicles.get_position(vid)
+
+    def im_position_function(imid):
+        return lambda: env.intersections.get_position(imid)
+
+    vehicles = {QBIMVehicle(vid, env, DistanceBasedUnit(vid, 75, v_position_function(vid))) for
                 vid in env.vehicles.get_ids()}
     intersection_managers = {QBIMIntersectionManager(imid, env, granularity, TIME_STEP,
-                                                     DistanceBasedUnit(imid, 75,
-                                                                       lambda: env.intersections.get_position(imid)))
+                                                     DistanceBasedUnit(imid, 75, im_position_function(imid)))
                              for imid in env.intersections.get_ids()}
 
     metric_collector = MetricCollector(env, *METRICS_TO_COLLECT, messaging_unit_class=DistanceBasedUnit)
@@ -59,7 +66,7 @@ def run_experiment(vpm: float, granularity: int):
         removed_vehicles = {v for v in vehicles if v.get_id() in env.get_removed_vehicles()}
         for v in removed_vehicles:
             v.destroy()
-        new_vehicles = {QBIMVehicle(vid, env, DistanceBasedUnit(vid, 75, lambda: env.vehicles.get_position(vid)))
+        new_vehicles = {QBIMVehicle(vid, env, DistanceBasedUnit(vid, 75, v_position_function(vid)))
                         for vid in env.get_added_vehicles()}
         vehicles = (vehicles - removed_vehicles).union(new_vehicles)
         for vehicle in vehicles:
