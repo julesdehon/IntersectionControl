@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 from typing import Tuple, Dict, FrozenSet
-import shapely.geometry
+from shapely.geometry import Polygon
 
 import numpy as np
 
@@ -49,7 +49,8 @@ class Intersection:
 
     def __init__(self, width: float, height: float, position: Tuple[float, float], granularity: int,
                  trajectories: Dict[str, Trajectory]):
-        self.grid = np.full((granularity, granularity), False)
+        self.tile_shapes = [[Polygon([(i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)]) for j in range(granularity)]
+                            for i in range(granularity)]
         self.granularity = granularity
         self.size = np.array([width, height])
         self.trajectories = trajectories
@@ -74,6 +75,7 @@ class Intersection:
         corners_transformed = np.array([
             (((corner - self.position) + self.size / 2) / self.size) * self.granularity for corner in corners
         ])
+        vehicle_and_buffer = Polygon(corners_transformed)
 
         min_x = math.floor(np.min(corners_transformed[:, 0]))
         max_x = math.floor(np.max(corners_transformed[:, 0]))
@@ -81,10 +83,9 @@ class Intersection:
         max_y = math.floor(np.max(corners_transformed[:, 1]))
 
         tile_coords = set()
-        for i in range(min_x, max_x + 1):
-            for j in range(min_y, max_y + 1):
-                if shapely.geometry.Polygon(corners_transformed).intersects(
-                        shapely.geometry.Polygon([(i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1)])):
+        for i in range(max(min_x, 0), min(max_x + 1, self.granularity)):
+            for j in range(max(min_y, 0), min(max_y + 1, self.granularity)):
+                if vehicle_and_buffer.intersects(self.tile_shapes[i][j]):
                     tile_coords.add((i, j))
 
         return frozenset(tile_coords)
