@@ -1,5 +1,6 @@
 # Core
 numpy==1.22.3
+Shapely==1.8.2
 
 # Tests
 matplotlib==3.5.1

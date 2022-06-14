@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 from typing import Tuple, Dict, FrozenSet
+import shapely.geometry
 
 import numpy as np
 
@@ -82,11 +83,9 @@ class Intersection:
         tile_coords = set()
         for i in range(min_x, max_x + 1):
             for j in range(min_y, max_y + 1):
-                for di in [0, 1]:
-                    for dj in [0, 1]:
-                        if self._is_point_in_rectangle(corners_transformed, np.array((i + di, j + dj))):
-                            tile_coords.add((i, j))
-                            break
+                if shapely.geometry.Polygon(corners_transformed).intersects(
+                        shapely.geometry.Polygon([(i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1)])):
+                    tile_coords.add((i, j))
 
         return frozenset(tile_coords)
 
