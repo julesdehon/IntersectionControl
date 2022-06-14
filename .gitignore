@@ -4,3 +4,6 @@ dist
 
 # Reinforcement Learning checkpoints
 checkpoints
+
+# Experiment output
+misc/experiments/out
