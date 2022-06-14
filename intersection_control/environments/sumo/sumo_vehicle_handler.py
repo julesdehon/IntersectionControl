@@ -43,8 +43,8 @@ class SumoVehicleHandler(VehicleHandler):
         return self.subscription_results[vehicle_id][tc.VAR_WIDTH]
 
     def get_driving_distance(self, vehicle_id: str) -> float:
-        road_end_x, road_end_y = self.net.getEdge(self.subscription_results[vehicle_id][tc.VAR_ROAD_ID]).getShape()[-1]
-        return traci.vehicle.getDrivingDistance2D(vehicle_id, road_end_x, road_end_y)
+        return self.net.getLane(self.subscription_results[vehicle_id][tc.VAR_LANE_ID]).getLength() - \
+                               self.subscription_results[vehicle_id][tc.VAR_LANEPOSITION]
 
     def get_speed(self, vehicle_id: str) -> float:
         return self.subscription_results[vehicle_id][tc.VAR_SPEED]
@@ -54,7 +54,8 @@ class SumoVehicleHandler(VehicleHandler):
 
     def get_direction(self, vehicle_id) -> float:
         # Transform as required
-        return math.pi - (math.radians(self.subscription_results[vehicle_id][tc.VAR_ANGLE]) + math.pi / 2) % (2 * math.pi)
+        return math.pi - (math.radians(self.subscription_results[vehicle_id][tc.VAR_ANGLE]) + math.pi / 2) % (
+                    2 * math.pi)
 
     def set_desired_speed(self, vehicle_id: str, to: float):
         traci.vehicle.setSpeed(vehicle_id, to)

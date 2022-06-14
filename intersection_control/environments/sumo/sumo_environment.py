@@ -3,7 +3,7 @@ import sys
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from random import random
+import random
 from typing import List, Union, Optional, Dict
 
 if 'SUMO_HOME' in os.environ:
@@ -40,7 +40,7 @@ class SumoEnvironment(Environment):
             "--step-length", str(time_step),
             "--collision.check-junctions",
             "--default.speeddev", "0",
-            "--collision.action", "remove",
+            "--collision.action", "warn",
             "--no-step-log"
         ]
         if not warnings:
@@ -49,7 +49,7 @@ class SumoEnvironment(Environment):
         self.subscription_junction_id = traci.junction.getIDList()[0]
         traci.junction.subscribeContext(self.subscription_junction_id, tc.CMD_GET_VEHICLE_VARIABLE, 100_000_000,
                                         [tc.VAR_SPEED, tc.VAR_POSITION, tc.VAR_ROAD_ID, tc.VAR_LANE_ID, tc.VAR_LENGTH,
-                                         tc.VAR_WIDTH, tc.VAR_ROUTE_ID, tc.VAR_DISTANCE, tc.VAR_ANGLE,
+                                         tc.VAR_WIDTH, tc.VAR_ROUTE_ID, tc.VAR_LANEPOSITION, tc.VAR_ANGLE,
                                          tc.VAR_ALLOWED_SPEED, tc.VAR_ACCELERATION, tc.VAR_ACCEL, tc.VAR_DECEL])
         traci.simulation.subscribe([tc.VAR_TIME, tc.VAR_ARRIVED_VEHICLES_IDS, tc.VAR_DEPARTED_VEHICLES_IDS,
                                     tc.VAR_COLLIDING_VEHICLES_IDS])
@@ -219,7 +219,7 @@ class RandomDemandGenerator(DemandGenerator):
     def step(self) -> List[NewVehicleParams]:
         return [
             NewVehicleParams(self.get_next_id(), route, depart_speed=self.depart_speed, control_type=self.control_type)
-            for route, prob in self.spawn_probabilities.items() if random() <= prob
+            for route, prob in self.spawn_probabilities.items() if random.random() <= prob
         ]
 
     def get_next_id(self) -> str:
