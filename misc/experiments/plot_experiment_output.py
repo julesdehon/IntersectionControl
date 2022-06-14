@@ -25,7 +25,7 @@ def plot_x_against_y(df, algos, x, y):
     plt.ylabel(y)
     plt.grid(True)
     plt.legend()
-    plt.savefig(f"{x}-vs-{y}.pdf")
+    plt.savefig(f"{x}-vs-{y}-{'-'.join(algos)}.pdf")
     plt.show()
 
 

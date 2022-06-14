@@ -14,7 +14,7 @@ from misc.utils import SINGLE_INTERSECTION_TL_PHASES
 TIME_STEP = 0.05
 VPMs = np.arange(0.5, 2.51, 0.05)
 RUNS_PER_VPM = 3
-STEPS_PER_RUN = int((20 * 60) / TIME_STEP)  # 5 minutes
+STEPS_PER_RUN = int((20 * 60) / TIME_STEP)  # 20 minutes
 VEHICLE_FACTORIES = {
     "stip": lambda vid, env: stip.STIPVehicle(vid, env,
                                               DistanceBasedUnit(vid, 125, lambda: env.vehicles.get_position(vid))),
