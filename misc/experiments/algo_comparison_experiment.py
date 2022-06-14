@@ -2,6 +2,7 @@
 from typing import Optional, Callable, List, Set, Dict
 import numpy as np
 import time
+from tqdm import tqdm
 from intersection_control.algorithms.traffic_light import TLIntersectionManager, TLVehicle
 from intersection_control.communication import DistanceBasedUnit
 from intersection_control.core import Vehicle, Environment, IntersectionManager
@@ -12,7 +13,7 @@ from intersection_control.environments.sumo import RandomDemandGenerator
 from misc.utils import SINGLE_INTERSECTION_TL_PHASES
 
 TIME_STEP = 0.05
-VPMs = np.arange(0.5, 2.51, 0.05)
+VPMs = np.arange(0.2, 1.51, 0.05)
 RUNS_PER_VPM = 3
 STEPS_PER_RUN = int((20 * 60) / TIME_STEP)  # 20 minutes
 VEHICLE_FACTORIES = {
@@ -32,7 +33,7 @@ METRICS_TO_COLLECT = [Metric.TIME, Metric.ALL_VEHICLE_IDS, Metric.MESSAGES_EXCHA
 
 
 def main():
-    f = open("../out.csv", "w")
+    f = open(f"out/{time.time()}-algo_comparison_experiment.csv", "w")
     f.write("vpm,algo,delay,messages_exchanged,time_per_step\n")
     for vpm in VPMs:
         print(f"Running experiments for {vpm} vehicles per minute")
@@ -48,6 +49,7 @@ def main():
                     successful_experiments += 1
             avgs = totals / successful_experiments
             f.write(f"{vpm},{algo},{','.join([str(avg) for avg in avgs])}\n")
+            f.flush()
     f.close()
 
 
@@ -58,7 +60,7 @@ def run_experiment(vpm: float, v_factory: Callable[[str, Environment], Vehicle],
         route: vpm for route in ["NE", "NS", "NW", "EN", "ES", "EW", "SN", "SE", "SW", "WN", "WE", "WS"]
     }, TIME_STEP)
     env = SumoEnvironment(
-        "../../intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
+        "../intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
         demand_generator=demand_generator, time_step=TIME_STEP, gui=False)
     vehicles = {v_factory(vehicle_id, env) for vehicle_id in env.vehicles.get_ids()}
     intersection_managers = {im_factory(intersection_id, env) for intersection_id in
@@ -66,7 +68,7 @@ def run_experiment(vpm: float, v_factory: Callable[[str, Environment], Vehicle],
 
     metric_collector = MetricCollector(env, *METRICS_TO_COLLECT, messaging_unit_class=DistanceBasedUnit)
 
-    for _ in range(STEPS_PER_RUN):
+    for _ in tqdm(range(STEPS_PER_RUN)):
         env.step()
         removed_vehicles = {v for v in vehicles if v.get_id() in env.get_removed_vehicles()}
         for v in removed_vehicles:

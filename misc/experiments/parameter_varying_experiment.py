@@ -2,6 +2,7 @@
 from typing import List, Set, Dict
 import numpy as np
 import time
+from tqdm import tqdm
 
 from intersection_control.algorithms.qb_im import QBIMVehicle, QBIMIntersectionManager
 from intersection_control.communication import DistanceBasedUnit
@@ -10,7 +11,7 @@ from intersection_control.core.performance_indication import MetricCollector, Me
 from intersection_control.environments.sumo import RandomDemandGenerator
 
 TIME_STEP = 0.05
-VPMs = [1, 1.5, 2]
+VPMs = [0.2, 0.6, 1.]
 GRANULARITIES = range(1, 50, 5)
 RUNS_PER_GRANULARITY = 3
 STEPS_PER_RUN = int((20 * 60) / TIME_STEP)  # 20 minutes
@@ -18,7 +19,7 @@ METRICS_TO_COLLECT = [Metric.TIME, Metric.ALL_VEHICLE_IDS]
 
 
 def main():
-    f = open("../parameter_varying_experiment.csv", "w")
+    f = open(f"out/{time.time()}-parameter_varying_experiment.csv", "w")
     f.write("vpm,granularity,delay\n")
     for granularity in GRANULARITIES:
         print(f"Running experiments for granularity {granularity}")
@@ -61,7 +62,7 @@ def run_experiment(vpm: float, granularity: int):
 
     metric_collector = MetricCollector(env, *METRICS_TO_COLLECT, messaging_unit_class=DistanceBasedUnit)
 
-    for _ in range(STEPS_PER_RUN):
+    for _ in tqdm(range(STEPS_PER_RUN)):
         env.step()
         removed_vehicles = {v for v in vehicles if v.get_id() in env.get_removed_vehicles()}
         for v in removed_vehicles:
