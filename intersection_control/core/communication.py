@@ -19,6 +19,13 @@ class MessagingUnit(ABC):
     implementation of different Unit types that behave slightly differently
     but are able to communicate.
     """
+    @property
+    @abstractmethod
+    def address(self) -> str:
+        """The MessagingUnit's address
+        """
+        raise NotImplementedError
+
     @abstractmethod
     def discover(self) -> List[str]:
         """Returns a list of addresses that can be reached
@@ -54,6 +61,17 @@ class MessagingUnit(ABC):
         :param Message message: The message to be broadcast
         """
         raise NotImplementedError
+
+    def destroy(self):
+        """Called when the user of this unit no longer exists
+
+        Useful, for example, to remove this unit from a network, if one is
+        explicitly tracked.
+
+        Can optionally be implemented to do some clean-up functions if needed.
+        If this isn't needed, this method can simply be ignored.
+        """
+        pass
 
 
 class Message:

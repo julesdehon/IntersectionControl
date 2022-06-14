@@ -3,8 +3,7 @@ from typing import Dict, Tuple, FrozenSet, Set
 import logging
 
 from intersection_control.algorithms.utils.discretised_intersection import InternalVehicle, Intersection
-from intersection_control.communication.distance_based_unit import DistanceBasedUnit
-from intersection_control.core import IntersectionManager
+from intersection_control.core import IntersectionManager, MessagingUnit
 from intersection_control.core import Message, Environment
 from intersection_control.algorithms.qb_im.constants import IMMessageType, VehicleMessageType
 import numpy as np
@@ -18,9 +17,10 @@ MUST_ACCELERATE_THRESHOLD = 2  # Vehicles travelling slower than this threshold 
 
 
 class QBIMIntersectionManager(IntersectionManager):
-    def __init__(self, intersection_id: str, environment: Environment, granularity: int, time_discretisation: float):
+    def __init__(self, intersection_id: str, environment: Environment, granularity: int, time_discretisation: float,
+                 messaging_unit: MessagingUnit):
         super().__init__(intersection_id, environment)
-        self.messaging_unit = DistanceBasedUnit(self.intersection_id, 75, self.get_position)
+        self.messaging_unit = messaging_unit
         self.time_discretisation = time_discretisation
         self.tiles: Dict[Tuple[Tuple[int, int], float], str] = {}  # A map from tiles and times to vehicle ids
         # A map from vehicles to sets of tiles

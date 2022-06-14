@@ -5,26 +5,25 @@ import numpy as np
 
 from intersection_control.algorithms.stip.constants import VehicleState, MessageType
 from intersection_control.algorithms.utils.discretised_intersection import Intersection, InternalVehicle
-from intersection_control.communication import DistanceBasedUnit
-from intersection_control.core import Vehicle, Environment, Message
+from intersection_control.core import Vehicle, Environment, Message, MessagingUnit
 from intersection_control.core.environment import Trajectory
 
 
 class STIPVehicle(Vehicle):
-    INTERSECTION_GRANULARITY = 10
+    INTERSECTION_GRANULARITY = 30
     RECALCULATE_THRESHOLD = 0.5
     SAFETY_BUFFER = (0.5, 1)
-    COMMUNICATION_RANGE = 75
 
-    def __init__(self, vehicle_id: str, environment: Environment):
+    def __init__(self, vehicle_id: str, environment: Environment, messaging_unit: MessagingUnit):
         super().__init__(vehicle_id, environment)
-        self.messaging_unit = DistanceBasedUnit(self.get_id(), 75, self.get_position)
+        self.messaging_unit = messaging_unit
         self.state = VehicleState.EXIT
         self.approaching_intersection: Optional[Intersection] = None
         self.trajectory: Optional[Trajectory] = None
         self.arrived_at: Optional[float] = None
         self.target_speed: float = self.get_speed()
         self.cached_cells: Optional[Tuple[float, Set[Tuple[int, int]]]] = None
+        self.last_sent_distance: Optional[float] = None
 
     def step(self):
         if self.state == VehicleState.APPROACH:
@@ -40,6 +39,8 @@ class STIPVehicle(Vehicle):
         self.sender_logic()
         for message in self.messaging_unit.receive():
             self.receiver_logic(message)
+
+        self.last_sent_distance = self.get_driving_distance()
 
     def receiver_logic(self, safety_message: Message):
         c = safety_message.contents
@@ -65,8 +66,7 @@ class STIPVehicle(Vehicle):
             "exit_time": self.approximate_exit_time(),
             "trajectory_cells_list": self.get_trajectory_cells_list(),
             "lane": self.get_trajectory()[0],
-            "distance": np.linalg.norm(np.array(self.get_position()) - np.array(
-                self.environment.intersections.get_position(self.approaching())))
+            "distance": self.get_driving_distance()
         })
 
     def cross_message(self) -> Message:
@@ -126,6 +126,7 @@ class STIPVehicle(Vehicle):
         self.arrived_at = None
         self.state = VehicleState.EXIT
         self.set_desired_speed(-1)
+        self.last_sent_distance = None
 
     def transition_to_approach(self):
         intersection_id = self.approaching()
@@ -139,6 +140,7 @@ class STIPVehicle(Vehicle):
         self.target_speed = self.get_speed()
         self.cached_cells = None
         self.arrived_at = None
+        self.last_sent_distance = self.approximate_arrival_time()
 
     def does_overlap_with(self, c):
         space_overlaps = len(self.get_trajectory_cells_list().intersection(c["trajectory_cells_list"])) > 0
@@ -147,11 +149,8 @@ class STIPVehicle(Vehicle):
         return space_overlaps and time_overlaps
 
     def has_priority(self, c):
-        if c["lane"] == self.get_trajectory()[0]:
-            return np.linalg.norm(np.array(self.get_position()) - np.array(
-                self.environment.intersections.get_position(self.approaching()))) < c["distance"]
-        t = self.approximate_arrival_time()
-        return t < c["arrival_time"] or (t == c["arrival_time"] and self.get_id() < c["id"])
+        d = self.last_sent_distance
+        return d < c["distance"] or (d == c["distance"] and self.get_id() < c["id"])
 
     def set_target_speed_to_miss_vehicle(self, c):
         time_to_arrive = c["exit_time"] - self.environment.get_current_time()

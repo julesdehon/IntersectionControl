@@ -66,7 +66,10 @@ class TestIntersection(unittest.TestCase):
 class TestIntersectionManager(unittest.TestCase):
     def setUp(self) -> None:
         self.env = FakeEnv()
-        self.im = QBIMIntersectionManager("intersection", self.env, 40, 0.05)
+        self.im = QBIMIntersectionManager("intersection", self.env, 40, 0.05,
+                                          DistanceBasedUnit("intersection", 75,
+                                                            lambda: self.env.intersections.get_position(
+                                                                "intersection")))
         self.im.messaging_unit.send = MagicMock()
         self.messaging_unit = DistanceBasedUnit("test", 100, lambda: (0, 0))
 

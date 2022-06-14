@@ -2,16 +2,19 @@ from typing import Optional, List
 import numpy as np
 
 from intersection_control.algorithms.rl_im.constants import RLMode
-from intersection_control.communication.distance_based_unit import DistanceBasedUnit
-from intersection_control.core import Vehicle, Environment, Message
+from intersection_control.communication import DistanceBasedUnit
+from intersection_control.core import Vehicle, Environment, Message, MessagingUnit
 from ray.rllib.agents.trainer import Trainer
 
 
 class RLVehicle(Vehicle):
     def __init__(self, vehicle_id: str, environment: Environment, intersection_id: str,
-                 mode: int, policy: Optional[Trainer] = None):
+                 mode: int, messaging_unit: MessagingUnit = None, policy: Optional[Trainer] = None):
         super().__init__(vehicle_id, environment)
-        self.messaging_unit = DistanceBasedUnit(vehicle_id, 75, self.get_position)
+        if messaging_unit is None:
+            self.messaging_unit = DistanceBasedUnit(self.get_id(), 75, self.get_position)
+        else:
+            self.messaging_unit = messaging_unit
         self.trajectory_list = list(self.environment.intersections.get_trajectories(intersection_id).keys())
         self.last_obs: Optional[List[List[float]]] = None
         self.mode = mode

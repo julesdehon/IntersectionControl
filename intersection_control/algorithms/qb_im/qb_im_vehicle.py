@@ -1,7 +1,6 @@
 from typing import Optional
 
-from intersection_control.communication.distance_based_unit import DistanceBasedUnit
-from intersection_control.core import Vehicle, Environment
+from intersection_control.core import Vehicle, Environment, MessagingUnit
 from intersection_control.core import Message
 from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType, VehicleState
 import logging
@@ -10,10 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class QBIMVehicle(Vehicle):
-    def __init__(self, vehicle_id: str, environment: Environment, communication_range: int):
+    def __init__(self, vehicle_id: str, environment: Environment, messaging_unit: MessagingUnit):
         super().__init__(vehicle_id, environment)
-        self.communication_range = communication_range
-        self.messaging_unit = DistanceBasedUnit(self.vehicle_id, self.communication_range, self.get_position)
+        self.messaging_unit = messaging_unit
         self.state = VehicleState.DEFAULT
         self.reservation: Optional[Reservation] = None
         self.timeout = self.environment.get_current_time()
@@ -101,11 +99,11 @@ class QBIMVehicle(Vehicle):
             logger.warning(f"[{self.get_id()}] Received unknown message type from {message.sender}. Ignoring.")
 
     def approximate_arrival_time(self):
-        if self.state == VehicleState.WAITING_AT_INTERSECTION:
+        target_speed = self.target_speed if self.target_speed is not None else self.get_speed()
+        if self.state == VehicleState.WAITING_AT_INTERSECTION or target_speed == 0:
             return self.environment.get_current_time() + \
                    ((2 * self.get_driving_distance()) / self.get_max_acceleration()) ** (1 / 2)
         driving_distance = self.get_driving_distance()
-        target_speed = self.target_speed if self.target_speed is not None else self.get_speed()
         return self.environment.get_current_time() + driving_distance / target_speed
 
     def approximate_arrival_velocity(self):
@@ -129,7 +127,7 @@ class QBIMVehicle(Vehicle):
                 self.messaging_unit.send(self.approaching_im, self.request_message())
         elif self.state == VehicleState.APPROACHING_WITH_RESERVATION:
             if self.environment.get_current_time() >= self.timeout and self.reservation_needs_changing() \
-                    and not self.was_just_waiting:
+                    and not self.was_just_waiting and self.get_driving_distance() >= self.distance_to_stop():
                 logger.debug(f"[{self.get_id()}] Changing reservation request. Old reservation time: "
                              f"{self.reservation.arrival_time}, new approximate arrival: "
                              f"{self.approximate_arrival_time()}")

@@ -26,11 +26,15 @@ class DistanceBasedUnit(MessagingUnit):
 
     def __init__(self, address: str, communication_range: float, get_position: Callable[[], Tuple[float, float]]):
         # assert address not in self._network
-        self.address = address
+        self._address = address
         self.get_position = get_position
         self.communication_range = communication_range
         self._network[self.address] = self
         self._message_queue: List[Message] = []
+
+    @property
+    def address(self) -> str:
+        return self._address
 
     def destroy(self):
         """This must be called explicitly when the unit goes out of scope
@@ -40,7 +44,8 @@ class DistanceBasedUnit(MessagingUnit):
             del self._network[self.address]
 
     def discover(self) -> List[str]:
-        return [address for address, unit in list(self._network.items()) if self._within_range(unit)]
+        return [address for address, unit in list(self._network.items()) if
+                self._within_range(unit) and address != self.address]
 
     def send(self, address: str, message: Message):
         other_unit = self._network.get(address)
@@ -54,8 +59,6 @@ class DistanceBasedUnit(MessagingUnit):
 
     def broadcast(self, message: Message):
         for address in self.discover():
-            if address == self.address:
-                continue
             self.send(address, message)
 
     def _within_range(self, other_unit: DistanceBasedUnit):
