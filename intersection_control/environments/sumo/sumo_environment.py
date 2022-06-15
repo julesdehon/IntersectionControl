@@ -27,6 +27,9 @@ class SumoEnvironment(Environment):
                                 next(sumolib.xml.parse_fast(net_config_file, "net-file", "value")).value)
         route_file = os.path.join(os.path.dirname(net_config_file),
                                   next(sumolib.xml.parse_fast(net_config_file, "route-files", "value")).value)
+        self.net = sumolib.net.readNet(net_file, withInternal=True)
+        self.routes = {route.id: route.edges.split() for route in
+                       sumolib.xml.parse_fast(route_file, 'route', ['id', 'edges'])}
         self.demand_generator = demand_generator
 
         # this script has been called from the command line. It will start sumo as a
@@ -57,8 +60,8 @@ class SumoEnvironment(Environment):
         traci.junction.getContextSubscriptionResults(self.subscription_junction_id)
         self.subscription_results = traci.simulation.getSubscriptionResults()
 
-        self._intersections = SumoIntersectionHandler(net_file, route_file)
-        self._vehicles = SumoVehicleHandler(net_file)
+        self._intersections = SumoIntersectionHandler(self.net, self.routes)
+        self._vehicles = SumoVehicleHandler(self.net)
 
     @staticmethod
     def close():
@@ -78,11 +81,15 @@ class SumoEnvironment(Environment):
     def step(self):
         if self.demand_generator is not None:
             for v in self.demand_generator.step():
-                traci.vehicle.add(v.veh_id, v.route_id, departSpeed=v.depart_speed, departPos=v.depart_pos)
+                lanes_for_route = [l.getIndex() for l in self.net.getEdge(self.routes[v.route_id][0]).getLanes() if
+                                   self.routes[v.route_id][1] in [conn.getTo().getID() for conn in l.getOutgoing()]]
+                traci.vehicle.add(v.veh_id, v.route_id, departLane=random.choice(lanes_for_route),
+                                  departSpeed=v.depart_speed, departPos=v.depart_pos)
                 traci.vehicle.setColor(v.veh_id, [255, 255, 255, 255])
                 if v.control_type == ControlType.MANUAL:
                     traci.vehicle.setSpeedMode(v.veh_id, 0b100110)
                     traci.vehicle.setSpeed(v.veh_id, v.depart_speed)  # The vehicle won't accelerate to the road's limit
+                traci.vehicle.setLaneChangeMode(v.veh_id, 0b010000000101)
         traci.simulationStep()
         self.vehicles.subscription_results = traci.junction.getContextSubscriptionResults(self.subscription_junction_id)
         self.subscription_results = traci.simulation.getSubscriptionResults()

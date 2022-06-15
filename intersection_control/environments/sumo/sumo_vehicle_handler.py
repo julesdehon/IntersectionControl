@@ -7,8 +7,8 @@ from intersection_control.core.environment import VehicleHandler
 
 
 class SumoVehicleHandler(VehicleHandler):
-    def __init__(self, net_file: str):
-        self.net = sumolib.net.readNet(net_file, withInternal=True)
+    def __init__(self, net: sumolib.net.Net):
+        self.net = net
 
         # Dictionary mapping roads to the intersections that they enter
         self.intersection_entered_by_lane = self._get_intersections_entered_by_lanes()
@@ -34,7 +34,8 @@ class SumoVehicleHandler(VehicleHandler):
         return traci.vehicle.getIDList()
 
     def get_trajectory(self, vehicle_id: str) -> str:
-        return self.subscription_results[vehicle_id][tc.VAR_ROUTE_ID]
+        return f"{self.subscription_results[vehicle_id][tc.VAR_ROUTE_ID]}-" \
+               f"{self.subscription_results[vehicle_id][tc.VAR_LANE_ID]}"
 
     def get_length(self, vehicle_id: str) -> float:
         return self.subscription_results[vehicle_id][tc.VAR_LENGTH]
@@ -44,7 +45,7 @@ class SumoVehicleHandler(VehicleHandler):
 
     def get_driving_distance(self, vehicle_id: str) -> float:
         return self.net.getLane(self.subscription_results[vehicle_id][tc.VAR_LANE_ID]).getLength() - \
-                               self.subscription_results[vehicle_id][tc.VAR_LANEPOSITION]
+               self.subscription_results[vehicle_id][tc.VAR_LANEPOSITION]
 
     def get_speed(self, vehicle_id: str) -> float:
         return self.subscription_results[vehicle_id][tc.VAR_SPEED]
@@ -55,7 +56,7 @@ class SumoVehicleHandler(VehicleHandler):
     def get_direction(self, vehicle_id) -> float:
         # Transform as required
         return math.pi - (math.radians(self.subscription_results[vehicle_id][tc.VAR_ANGLE]) + math.pi / 2) % (
-                    2 * math.pi)
+                2 * math.pi)
 
     def set_desired_speed(self, vehicle_id: str, to: float):
         traci.vehicle.setSpeed(vehicle_id, to)

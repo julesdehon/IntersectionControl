@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import Dict, List, Tuple, Optional, Set
 import numpy as np
 import traci
@@ -53,9 +54,9 @@ class PointBasedTrajectory(Trajectory):
 
 
 class SumoIntersectionHandler(IntersectionHandler):
-    def __init__(self, net_file: str, route_file: str):
-        self.net = sumolib.net.readNet(net_file, withInternal=True)
-        self.routes = list(sumolib.xml.parse_fast(route_file, 'route', ['id', 'edges']))
+    def __init__(self, net: sumolib.net.Net, routes: Dict[str, List[str]]):
+        self.net = net
+        self.routes = routes
         # TODO: The notion of a trajectory here is capturing two things: routes through the intersection (does the car
         #  want to go left, straight or right?), and also the actual path the vehicle might follow through the
         #  the intersection - but these are actually two distinct things that need to be captured separately:
@@ -65,7 +66,7 @@ class SumoIntersectionHandler(IntersectionHandler):
         self.trajectories: Dict[str, Dict[str, Trajectory]] = {
             intersection.getID():
                 {
-                    self._get_route_through_edge(edge):
+                    f"{self._get_route_through_edge(edge.getID())}-{edge.getIncoming()[0].getID()}":
                         PointBasedTrajectory(edge.getSpeed(), [np.array(point) for point in edge.getShape()])
                     for edge in [self.net.getLane(laneId) for laneId in intersection.getInternal()]
                 }
@@ -96,16 +97,14 @@ class SumoIntersectionHandler(IntersectionHandler):
 
     def set_traffic_light_phase(self, intersection_id: str, phases: Tuple[Set[str], Set[str], Set[str]]):
         (g, y, r) = phases
-        links = [self._get_route_through_edge(link) for [(_, _, link)] in
+        links = [self._get_route_through_edge(link.getID()) for [(_, _, link)] in
                  traci.trafficlight.getControlledLinks(intersection_id)]
         phase = ["r" if link in r else "y" if link in y else "g" for link in links]
         traci.trafficlight.setRedYellowGreenState(intersection_id, "".join(phase))
 
     def _get_route_through_edge(self, edge) -> Optional[str]:
-        for route in self.routes:
-            edges = route.edges.split()
-            inner_connection = self.net.getEdge(edges[0]).getConnections(self.net.getEdge(edges[1]))[0]
-            if self.net.getLane(inner_connection.getViaLaneID()).getID() == \
-                    (edge if isinstance(edge, str) else edge.getID()):
-                return route.id
+        for route, edges in self.routes.items():
+            inner_connections = self.net.getEdge(edges[0]).getConnections(self.net.getEdge(edges[1]))
+            if edge in {self.net.getLane(ic.getViaLaneID()).getID() for ic in inner_connections}:
+                return route
         return None
