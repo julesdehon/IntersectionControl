@@ -127,10 +127,7 @@
     </edge>
 
     <tlLogic id="intersection" type="static" programID="0" offset="0">
-        <phase duration="42" state="GGGGgrrrrrGGGGgrrrrr"/>
-        <phase duration="3"  state="yyyyyrrrrryyyyyrrrrr"/>
-        <phase duration="42" state="rrrrrGGGGgrrrrrGGGGg"/>
-        <phase duration="3"  state="rrrrryyyyyrrrrryyyyy"/>
+        <phase duration="35" state="GGGGGGGGGGGGGGGGGGGG"/>
     </tlLogic>
 
     <junction id="E" type="dead_end" x="300.00" y="0.00" incLanes="oE_0 oE_1 oE_2" intLanes="" shape="300.00,-0.00 300.00,-9.60 300.00,0.00"/>
