@@ -1,6 +1,7 @@
-from .sumo_environment import SumoEnvironment, DemandGenerator, ScenarioGenerator, RandomDemandGenerator
+from .sumo_environment import SumoEnvironment
 from .sumo_vehicle_handler import SumoVehicleHandler
 from .sumo_intersection_handler import SumoIntersectionHandler
+from .utils import DemandGenerator, ScenarioGenerator, RandomDemandGenerator, ControlType, NewVehicleParams
 
 __all__ = [
     "SumoEnvironment",
@@ -8,5 +9,7 @@ __all__ = [
     "SumoIntersectionHandler",
     "DemandGenerator",
     "ScenarioGenerator",
-    "RandomDemandGenerator"
+    "RandomDemandGenerator",
+    "ControlType",
+    "NewVehicleParams"
 ]

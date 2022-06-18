@@ -5,6 +5,8 @@ from intersection_control.core import Message
 from intersection_control.algorithms.qb_im.constants import VehicleMessageType, IMMessageType, VehicleState
 import logging
 
+from intersection_control.environments.sumo import ControlType
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +66,7 @@ class QBIMVehicle(Vehicle):
                      f" Actual time: {self.environment.get_current_time()}. Reservation velocity: "
                      f"{self.reservation.arrival_velocity} Actual velocity: {self.get_speed()}.")
         self.state = VehicleState.IN_INTERSECTION
+        self.environment.vehicles.set_control_mode(self.get_id(), ControlType.MANUAL)
 
     def transition_to_default(self):
         assert self.state == VehicleState.IN_INTERSECTION
@@ -77,6 +80,7 @@ class QBIMVehicle(Vehicle):
         self.was_just_waiting = False
         self.set_desired_speed(to=-1)
         self.state = VehicleState.DEFAULT
+        self.environment.vehicles.set_control_mode(self.get_id(), ControlType.WITH_SAFETY_PRECAUTIONS)
 
     def handle_message(self, message: Message):
         if message.contents["type"] == IMMessageType.CONFIRM:

@@ -12,8 +12,9 @@ import math
 logger = logging.getLogger(__name__)
 
 TIME_BUFFER = 0.5
+EDGE_TILE_TIME_BUFFER = 1
 SAFETY_BUFFER = (0.5, 1)
-MUST_ACCELERATE_THRESHOLD = 2  # Vehicles travelling slower than this threshold must accelerate through the intersection
+MUST_ACCELERATE_THRESHOLD = 4  # Vehicles travelling slower than this threshold must accelerate through the intersection
 
 
 class QBIMIntersectionManager(IntersectionManager):
@@ -100,6 +101,9 @@ class QBIMIntersectionManager(IntersectionManager):
                 tile_times.add((time, occupied_tiles))
                 for tile in occupied_tiles:
                     buf = TIME_BUFFER  # TODO: Tune this - the time buffer around which reservation slots are checked
+                    if tile[0] == 0 or tile[1] == 0 or tile[0] == self.intersection.granularity - 1 or \
+                            tile[1] == self.intersection.granularity - 1:
+                        buf = EDGE_TILE_TIME_BUFFER
                     for i in np.arange(-buf, buf, self.time_discretisation):
                         if (tile, time + i) in self.tiles:
                             if acceleration and message.contents["arrival_velocity"] > MUST_ACCELERATE_THRESHOLD:

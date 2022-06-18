@@ -4,6 +4,7 @@ import sumolib
 import traci
 import traci.constants as tc
 from intersection_control.core.environment import VehicleHandler
+from .utils import ControlType
 
 
 class SumoVehicleHandler(VehicleHandler):
@@ -96,3 +97,10 @@ class SumoVehicleHandler(VehicleHandler):
             for lane in intersection.getInternal():
                 result[lane] = intersection.getID()
         return result
+
+    def set_control_mode(self, vehicle_id, control_type: ControlType):
+        if control_type == ControlType.MANUAL:
+            traci.vehicle.setSpeedMode(vehicle_id, 0b100110)
+        elif control_type == ControlType.WITH_SAFETY_PRECAUTIONS:
+            traci.vehicle.setSpeedMode(vehicle_id, 31)
+
