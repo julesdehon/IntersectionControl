@@ -7,3 +7,6 @@ checkpoints
 
 # Experiment output
 misc/experiments/out
+
+# Coverage Statistics
+.coverage
