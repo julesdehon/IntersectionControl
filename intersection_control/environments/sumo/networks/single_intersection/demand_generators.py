@@ -1,5 +1,5 @@
 from typing import List
-from intersection_control.environments.sumo.sumo_environment import DemandGenerator, NewVehicleParams
+from intersection_control.environments.sumo import DemandGenerator, NewVehicleParams
 
 
 class ConflictingDemandGenerator(DemandGenerator):
