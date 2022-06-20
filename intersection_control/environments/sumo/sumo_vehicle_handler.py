@@ -103,4 +103,3 @@ class SumoVehicleHandler(VehicleHandler):
             traci.vehicle.setSpeedMode(vehicle_id, 0b100110)
         elif control_type == ControlType.WITH_SAFETY_PRECAUTIONS:
             traci.vehicle.setSpeedMode(vehicle_id, 31)
-

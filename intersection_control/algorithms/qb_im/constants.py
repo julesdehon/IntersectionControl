@@ -10,14 +10,14 @@ class VehicleMessageType:
     REQUEST = 0
     """
     This is the message a vehicle sends when it does not have a reservation
-    and wishes to make one. It contains the properties of the vehicle (ID number, performance, size, etc.) as well as 
+    and wishes to make one. It contains the properties of the vehicle (ID number, performance, size, etc.) as well as
     some properties of the proposed reservation (arrival time,
     arrival velocity, type of turn, arrival lane, etc.). The message also communicates the
     vehicle’s status as an emergency vehicle (in an emergency situation). In practice, this
     would be implemented using a secure method such that normal vehicles could not
     impersonate emergency vehicles. Such methods are well understood and the details
     of the implementation are beyond the scope of this research.
-    
+
     This message has 15 fields:
     * vehicle_id               — a unique identifier for the vehicle.
     * arrival_time             — the absolute time at which the vehicle agrees to arrive at the intersection.
@@ -38,7 +38,7 @@ class VehicleMessageType:
     not acceptable to the intersection, the vehicle may keep its old reservation. It is
     identical to the request message, except that it includes a unique reservation ID for
     the reservation the vehicle currently has.
-    
+
     This message is identical to the Request message, except for one added field:
     * reservation_id — an identifier for the reservation to be changed.
     """
@@ -47,7 +47,7 @@ class VehicleMessageType:
     """
     This is the message a vehicle sends when it no longer desires its current
     reservation.
-    
+
     It has 2 fields:
     * vehicle_id     — a unique identifier for the vehicle.
     * reservation_id — an identifier for the reservation to be cancelled.
@@ -57,13 +57,13 @@ class VehicleMessageType:
     """
     This message is sent when the vehicle has completed its traversal of the
     intersection. While it communicates the same information as the Cancel message,
-    there may be behavior tied to the Cancel message which should not occur when a vehicle 
+    there may be behavior tied to the Cancel message which should not occur when a vehicle
     successfully completes the trip across the intersection. Additionally, this message
     could be extended in order to communicate statistics for each vehicle, which could
     then be recorded in order to analyze the performance of the intersection manager.
     This message can be used to collect statistics for each vehicle, which can be recorded
     in order to analyze and improve the performance of the intersection manager.
-    
+
     It has 2 fields:
     * vehicle_id     — a unique identifier for the vehicle.
     * reservation_id — an identifier for the reservation that was just completed.
@@ -83,7 +83,7 @@ class IMMessageType:
     acceleration constraints determined by the intersection. This is just a list of rates and
     durations. How the list is created depends on the intersection manager. However, the
     vehicle’s safety must be guaranteed if it adheres to the list.
-    
+
     This message has 7 fields:
     * reservation_id   — a unique identifier for the reservation just created.
     * arrival_time     — the absolute time at which the vehicle is expected to arrive.
@@ -107,7 +107,7 @@ class IMMessageType:
     driver agent know that it should not attempt any more reservations until it reaches
     the intersection.
     This message has 1 field:
-    
+
     * timeout — the time at which the intersection manager will once again begin considering requests
                 from this vehicle
     """
@@ -116,7 +116,7 @@ class IMMessageType:
     """
     This message acknowledges the receipt of a Cancel or Done
     message.
-    
+
     It has 1 field:
     * reservation_id — a unique identifier for the reservation just cancelled or completed.
     """

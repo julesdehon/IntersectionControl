@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Tuple, Optional, Set
-import numpy as np
 
 from intersection_control.algorithms.stip.constants import VehicleState, MessageType
 from intersection_control.algorithms.utils.discretised_intersection import Intersection, InternalVehicle

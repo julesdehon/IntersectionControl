@@ -8,8 +8,7 @@ import gym.spaces as spaces
 from intersection_control.algorithms.rl_im.constants import RLMode
 from intersection_control.algorithms.rl_im.rl_vehicle import RLVehicle
 from intersection_control.environments import SumoEnvironment
-from intersection_control.environments.sumo import ScenarioGenerator
-from intersection_control.environments.sumo.sumo_environment import NewVehicleParams, ControlType
+from intersection_control.environments.sumo import ScenarioGenerator, NewVehicleParams, ControlType
 
 
 class MultiAgentSumoEnv(MultiAgentEnv):
@@ -75,29 +74,15 @@ class MultiAgentSumoEnv(MultiAgentEnv):
         return spaces.Discrete(3)
 
     def reset(self) -> MultiAgentDict:
-        try:
-            self.env.clear()
-            self.demand_generator.reset()
-            for vehicle in self.vehicles.values():
-                vehicle.destroy()
-            self.env.step()  # Load all the vehicles in
-            self.vehicles = {vehicle_id: RLVehicle(vehicle_id, self.env, "intersection") for
-                             vehicle_id in self.env.vehicles.get_ids()}
-            for vehicle in self.vehicles.values():
-                vehicle.step()  # So they all broadcast their details, ready for the observations
-        except:
-            self.env.close()
-            self.demand_generator.reset()
-            for vehicle in self.vehicles.values():
-                vehicle.destroy()
-            self.env = SumoEnvironment("../../../environments/sumo/networks/single_intersection/intersection.sumocfg",
-                                       demand_generator=self.demand_generator, time_step=0.1, gui=self.gui,
-                                       warnings=False)
-            self.env.step()  # Load all the vehicles in
-            self.vehicles = {vehicle_id: RLVehicle(vehicle_id, self.env, "intersection", RLMode.TRAIN) for
-                             vehicle_id in self.env.vehicles.get_ids()}
-            for vehicle in self.vehicles.values():
-                vehicle.step()  # So they all broadcast their details, ready for the observations
+        self.env.clear()
+        self.demand_generator.reset()
+        for vehicle in self.vehicles.values():
+            vehicle.destroy()
+        self.env.step()  # Load all the vehicles in
+        self.vehicles = {vehicle_id: RLVehicle(vehicle_id, self.env, "intersection", RLMode.TRAIN) for
+                         vehicle_id in self.env.vehicles.get_ids()}
+        for vehicle in self.vehicles.values():
+            vehicle.step()  # So they all broadcast their details, ready for the observations
 
         return {vehicle_id: vehicle.get_observation() for vehicle_id, vehicle in self.vehicles.items()}
 

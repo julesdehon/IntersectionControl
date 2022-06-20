@@ -81,8 +81,8 @@ class SumoEnvironment(Environment):
     def step(self):
         if self.demand_generator is not None:
             for v in self.demand_generator.step():
-                lanes_for_route = [l.getIndex() for l in self.net.getEdge(self.routes[v.route_id][0]).getLanes() if
-                                   self.routes[v.route_id][1] in [conn.getTo().getID() for conn in l.getOutgoing()]]
+                lanes_for_route = [ln.getIndex() for ln in self.net.getEdge(self.routes[v.route_id][0]).getLanes() if
+                                   self.routes[v.route_id][1] in [conn.getTo().getID() for conn in ln.getOutgoing()]]
                 traci.vehicle.add(v.veh_id, v.route_id, departLane=random.choice(lanes_for_route),
                                   departSpeed=v.depart_speed, departPos=v.depart_pos)
                 traci.vehicle.setColor(v.veh_id, [255, 255, 255, 255])

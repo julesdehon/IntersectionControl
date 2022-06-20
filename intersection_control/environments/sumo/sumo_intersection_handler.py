@@ -1,4 +1,3 @@
-from collections import namedtuple
 from typing import Dict, List, Tuple, Optional, Set
 import numpy as np
 import traci

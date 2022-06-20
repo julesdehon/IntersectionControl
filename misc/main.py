@@ -13,14 +13,14 @@ from misc.utils import SINGLE_INTERSECTION_TL_PHASES
 
 STEP_COUNT = 360000  # 1 Hour
 
-im_factory = {
+make_im = {
     "qb_im": lambda imid, env: QBIMIntersectionManager(
         imid, env, 30, 0.05, DistanceBasedUnit(imid, 75, lambda: env.intersections.get_position(imid))),
     "stip": None,
     "tl": lambda imid, env: TLIntersectionManager(imid, env, SINGLE_INTERSECTION_TL_PHASES)
 }
 
-vehicle_factory = {
+make_vehicle = {
     "qb_im": lambda vid, env: QBIMVehicle(vid, env,
                                           DistanceBasedUnit(vid, 75, lambda: env.vehicles.get_position(vid))),
     "stip": lambda vid, env: STIPVehicle(vid, env,
@@ -44,16 +44,16 @@ def main():
     env = SumoEnvironment("intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
                           demand_generator=demand_generator, time_step=0.05, gui=True)
 
-    intersection_managers = {im_factory[algo](intersection_id, env) for intersection_id in
-                             env.intersections.get_ids()} if im_factory[algo] else None
-    vehicles = {vehicle_factory[algo](vehicle_id, env) for vehicle_id in env.vehicles.get_ids()}
+    intersection_managers = {make_im[algo](intersection_id, env) for intersection_id in
+                             env.intersections.get_ids()} if make_im[algo] else None
+    vehicles = {make_vehicle[algo](vehicle_id, env) for vehicle_id in env.vehicles.get_ids()}
 
     for _ in range(STEP_COUNT):
         env.step()
         removed_vehicles = {v for v in vehicles if v.get_id() in env.get_removed_vehicles()}
         for v in removed_vehicles:
             v.destroy()
-        new_vehicles = {vehicle_factory[algo](vehicle_id, env) for vehicle_id in env.get_added_vehicles()}
+        new_vehicles = {make_vehicle[algo](vehicle_id, env) for vehicle_id in env.get_added_vehicles()}
         vehicles = (vehicles - removed_vehicles).union(new_vehicles)
         for vehicle in vehicles:
             vehicle.step()

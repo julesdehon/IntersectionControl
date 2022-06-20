@@ -32,8 +32,7 @@ def draw(intersection: Intersection, vehicle: InternalVehicle, reservations: Dic
         x -= safety_buffer[0] / 2
         y -= safety_buffer[1] / 2
         buffer = patches.Rectangle((x, y), vehicle.width + safety_buffer[0], vehicle.length + safety_buffer[1],
-                                linewidth=1,
-                                edgecolor='k', facecolor='none', zorder=5)
+                                   linewidth=1, edgecolor='k', facecolor='none', zorder=5)
         t = transforms.Affine2D().rotate_around(vehicle.position[0], vehicle.position[1],
                                                 vehicle.angle + math.radians(90)) + ax.transData
         buffer.set_transform(t)
