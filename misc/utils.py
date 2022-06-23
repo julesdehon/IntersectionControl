@@ -1,3 +1,5 @@
+import os
+
 # Simple traffic light phase definition for single_intersection sumo network
 SINGLE_INTERSECTION_TL_PHASES = [
     # ((Green, Yellow, Red), Duration)
@@ -10,3 +12,5 @@ SINGLE_INTERSECTION_TL_PHASES = [
     (({"WN", "WE", "WS"}, set(), {"NE", "NS", "NW", "EN", "ES", "EW", "SN", "SE", "SW"}), 10),
     ((set(), {"WN", "WE", "WS"}, {"NE", "NS", "NW", "EN", "ES", "EW", "SN", "SE", "SW"}), 2)
 ]
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

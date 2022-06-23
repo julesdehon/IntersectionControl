@@ -10,7 +10,7 @@ from intersection_control.environments import SumoEnvironment
 from intersection_control.algorithms import qb_im, stip
 from intersection_control.core.performance_indication import MetricCollector, Metric
 from intersection_control.environments.sumo import RandomDemandGenerator
-from misc.utils import SINGLE_INTERSECTION_TL_PHASES
+from misc.utils import SINGLE_INTERSECTION_TL_PHASES, ROOT_DIR
 
 TIME_STEP = 0.05
 VPMs = np.arange(0.2, 1.51, 0.05)
@@ -33,7 +33,7 @@ METRICS_TO_COLLECT = [Metric.TIME, Metric.ALL_VEHICLE_IDS, Metric.MESSAGES_EXCHA
 
 
 def main():
-    f = open(f"out/{time.time()}-algo_comparison_experiment.csv", "w")
+    f = open(f"{ROOT_DIR}/misc/experiments/out/{time.time()}-algo_comparison_experiment.csv", "w")
     f.write("vpm,algo,delay,messages_exchanged,time_per_step\n")
     for vpm in VPMs:
         print(f"Running experiments for {vpm} vehicles per minute")
@@ -60,7 +60,7 @@ def run_experiment(vpm: float, v_factory: Callable[[str, Environment], Vehicle],
         route: vpm for route in ["NE", "NS", "NW", "EN", "ES", "EW", "SN", "SE", "SW", "WN", "WE", "WS"]
     }, TIME_STEP)
     env = SumoEnvironment(
-        "../intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
+        f"{ROOT_DIR}/intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
         demand_generator=demand_generator, time_step=TIME_STEP, gui=False)
     vehicles = {v_factory(vehicle_id, env) for vehicle_id in env.vehicles.get_ids()}
     intersection_managers = {im_factory(intersection_id, env) for intersection_id in

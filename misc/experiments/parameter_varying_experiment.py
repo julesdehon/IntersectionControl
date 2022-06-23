@@ -9,6 +9,7 @@ from intersection_control.communication import DistanceBasedUnit
 from intersection_control.environments import SumoEnvironment
 from intersection_control.core.performance_indication import MetricCollector, Metric
 from intersection_control.environments.sumo import RandomDemandGenerator
+from misc.utils import ROOT_DIR
 
 TIME_STEP = 0.05
 VPMs = [0.2, 0.6, 1.]
@@ -19,7 +20,7 @@ METRICS_TO_COLLECT = [Metric.TIME, Metric.ALL_VEHICLE_IDS]
 
 
 def main():
-    f = open(f"out/{time.time()}-parameter_varying_experiment.csv", "w")
+    f = open(f"{ROOT_DIR}/misc/experiments/out/{time.time()}-parameter_varying_experiment.csv", "w")
     f.write("vpm,granularity,delay\n")
     for granularity in GRANULARITIES:
         print(f"Running experiments for granularity {granularity}")
@@ -45,7 +46,7 @@ def run_experiment(vpm: float, granularity: int):
         route: vpm for route in ["NE", "NS", "NW", "EN", "ES", "EW", "SN", "SE", "SW", "WN", "WE", "WS"]
     }, TIME_STEP)
     env = SumoEnvironment(
-        "../../intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
+        f"{ROOT_DIR}/intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
         demand_generator=demand_generator, time_step=TIME_STEP, gui=False)
 
     def v_position_function(vid):

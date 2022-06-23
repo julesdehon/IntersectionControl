@@ -9,7 +9,7 @@ from intersection_control.environments.sumo import SumoEnvironment, RandomDemand
 from intersection_control.algorithms.qb_im import QBIMIntersectionManager, QBIMVehicle
 from intersection_control.environments.sumo.networks.single_intersection.demand_generators import \
     ConflictingDemandGenerator
-from misc.utils import SINGLE_INTERSECTION_TL_PHASES
+from misc.utils import SINGLE_INTERSECTION_TL_PHASES, ROOT_DIR
 
 STEP_COUNT = 360000  # 1 Hour
 
@@ -31,8 +31,8 @@ make_vehicle = {
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    algo = "stip"
-    rate = 2.4999999999999996
+    algo = "tl"
+    rate = 1
 
     demand_generator = RandomDemandGenerator({
         "NE": rate, "NS": rate, "NW": rate,
@@ -41,8 +41,9 @@ def main():
         "WN": rate, "WE": rate, "WS": rate
     }, 0.05)
     # demand_generator = ConflictingDemandGenerator()
-    env = SumoEnvironment("intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
-                          demand_generator=demand_generator, time_step=0.05, gui=True)
+    env = SumoEnvironment(
+        f"{ROOT_DIR}/intersection_control/environments/sumo/networks/single_intersection/intersection.sumocfg",
+        demand_generator=demand_generator, time_step=0.05, gui=True)
 
     intersection_managers = {make_im[algo](intersection_id, env) for intersection_id in
                              env.intersections.get_ids()} if make_im[algo] else None
