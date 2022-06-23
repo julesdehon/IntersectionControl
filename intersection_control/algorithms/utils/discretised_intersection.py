@@ -89,16 +89,3 @@ class Intersection:
                     tile_coords.add((i, j))
 
         return frozenset(tile_coords)
-
-    @staticmethod
-    def _is_point_in_rectangle(corners, point):
-        """
-        Solution adapted from StackOverflow answer:
-        https://stackoverflow.com/questions/2752725/finding-whether-a-point-lies-inside-a-rectangle-or-not#:~:text=In%20any%20case%2C%20for%20any,test%20%2D%20the%20point%20is%20inside.
-        """
-        ab = corners[1] - corners[0]
-        am = point - corners[0]
-
-        bc = corners[2] - corners[1]
-        bm = point - corners[1]
-        return 0 <= np.dot(ab, am) <= np.dot(ab, ab) and 0 <= np.dot(bc, bm) <= np.dot(bc, bc)
