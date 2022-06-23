@@ -26,6 +26,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        sudo add-apt-repository ppa:sumo/stable
+        sudo apt-get update
         sudo apt-get install sumo sumo-tools
     - name: Lint with flake8
       run: |
