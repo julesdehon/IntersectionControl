@@ -96,7 +96,7 @@ class SumoIntersectionHandler(IntersectionHandler):
 
     def set_traffic_light_phase(self, intersection_id: str, phases: Tuple[Set[str], Set[str], Set[str]]):
         (g, y, r) = phases
-        links = [self._get_route_through_edge(link.getID()) for [(_, _, link)] in
+        links = [self._get_route_through_edge(link) for [(_, _, link)] in
                  traci.trafficlight.getControlledLinks(intersection_id)]
         phase = ["r" if link in r else "y" if link in y else "g" for link in links]
         traci.trafficlight.setRedYellowGreenState(intersection_id, "".join(phase))
