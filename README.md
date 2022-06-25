@@ -5,6 +5,7 @@
 
 [![test](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml/badge.svg)](https://github.com/julesdehon/IntersectionControl/actions/workflows/python-app.yml)
 [![Documentation Status](https://readthedocs.org/projects/intersectioncontrol/badge/?version=latest)](https://intersectioncontrol.readthedocs.io/en/latest/?badge=latest)
+[![Coverage Status](https://coveralls.io/repos/github/julesdehon/IntersectionControl/badge.svg?branch=main)](https://coveralls.io/github/julesdehon/IntersectionControl?branch=main)
 
 An environment-agnostic framework for implementing and comparing intersection control algorithms
 
